@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes shadcn@latest add button card badge input label select tabs table dropdown-menu avatar separator sheet dialog progress skeleton tooltip alert sonner scroll-area popover -y)",
+      "Bash(npm install *)"
+    ]
+  }
+}

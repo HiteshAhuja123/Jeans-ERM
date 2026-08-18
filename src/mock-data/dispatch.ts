@@ -1,0 +1,48 @@
+import type { DispatchRecord } from "@/types";
+
+export const mockDispatchRecords: DispatchRecord[] = [
+  {
+    id: "disp-001",
+    orderNumber: "ORD-2026-00453",
+    customerName: "Northline Trading",
+    quantity: 8000,
+    cartons: 160,
+    status: "delivered",
+    dispatchDate: "2026-07-29",
+    carrier: "Maersk Line",
+    trackingRef: "MAEU-9921347",
+  },
+  {
+    id: "disp-002",
+    orderNumber: "ORD-2026-00455",
+    customerName: "Studio Fit Co.",
+    quantity: 2400,
+    cartons: 48,
+    status: "in_transit",
+    dispatchDate: "2026-08-10",
+    carrier: "DHL Freight",
+    trackingRef: "DHL-4471209",
+  },
+  {
+    id: "disp-003",
+    orderNumber: "ORD-2026-00461",
+    customerName: "Westgate Garments",
+    quantity: 5200,
+    cartons: 104,
+    status: "packed",
+    dispatchDate: "2026-08-20",
+    carrier: "FedEx Trade",
+    trackingRef: "Pending pickup",
+  },
+  {
+    id: "disp-004",
+    orderNumber: "ORD-2026-00459",
+    customerName: "Urban Denim Co.",
+    quantity: 3600,
+    cartons: 72,
+    status: "pending",
+    dispatchDate: "2026-08-24",
+    carrier: "Not assigned",
+    trackingRef: "—",
+  },
+];
