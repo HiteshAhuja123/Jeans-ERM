@@ -75,7 +75,7 @@ export function DashboardView() {
           helpText={`${dashboardMetrics.delayedOrders} delayed`}
           icon={Package}
           accent={dashboardMetrics.delayedOrders > 0 ? "critical" : "success"}
-          href={dashboardMetrics.delayedOrders > 0 ? "/orders?status=delayed" : "/orders"}
+          href={dashboardMetrics.delayedOrders > 0 ? "/orders?delayed=1" : "/orders"}
         />
         <StatCard
           label="Inventory Alerts"

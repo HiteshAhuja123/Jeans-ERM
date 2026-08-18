@@ -4,6 +4,7 @@ import type {
   DispatchStatus,
   MachineStatus,
   MasterStatus,
+  OrderPriority,
   OrderStatus,
   ProductionStageStatus,
   PurchaseOrderStatus,
@@ -17,10 +18,17 @@ export const orderStatusMeta: Record<OrderStatus, StatusMeta> = {
   draft: { label: "Draft", level: "neutral" },
   confirmed: { label: "Confirmed", level: "info" },
   in_production: { label: "In Production", level: "info" },
-  delayed: { label: "Delayed", level: "critical" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
   completed: { label: "Completed", level: "success" },
   dispatched: { label: "Dispatched", level: "success" },
   cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const orderPriorityMeta: Record<OrderPriority, StatusMeta> = {
+  low: { label: "Low", level: "neutral" },
+  normal: { label: "Normal", level: "info" },
+  high: { label: "High", level: "warning" },
+  urgent: { label: "Urgent", level: "critical" },
 };
 
 export const stockLevelMeta: Record<StockLevel, StatusMeta> = {

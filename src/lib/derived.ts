@@ -30,7 +30,7 @@ const totalPassed = mockQcInspections.reduce((sum, i) => sum + i.passedQty, 0);
 export const dashboardMetrics = {
   todaysProduction: { completed: today.completed, target: today.target },
   activeOrders: mockOrders.filter((o) =>
-    ["confirmed", "in_production", "delayed"].includes(o.status),
+    ["confirmed", "in_production", "partially_completed"].includes(o.status),
   ).length,
   delayedOrders: navBadgeCounts.delayedOrders,
   lowStockItems: navBadgeCounts.lowStock,

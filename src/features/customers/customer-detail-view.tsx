@@ -110,11 +110,16 @@ export function CustomerDetailView({ id }: { id: string }) {
                   {orders.map((order) => {
                     const meta = orderStatusMeta[order.status];
                     return (
-                      <Card key={order.id} className="flex items-center justify-between p-4">
+                      <Card
+                        key={order.id}
+                        className="flex cursor-pointer items-center justify-between p-4 hover:border-primary/40"
+                        onClick={() => router.push(`/orders/${order.id}`)}
+                      >
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-foreground">{order.orderNumber}</span>
                           <span className="text-xs text-muted-foreground">
-                            {order.styleCode} · {order.quantity.toLocaleString()} pcs · Due {formatDate(order.dueDate)}
+                            {order.lineItems.length} style{order.lineItems.length === 1 ? "" : "s"} ·{" "}
+                            {order.quantity.toLocaleString()} pcs · Due {formatDate(order.dueDate)}
                           </span>
                         </div>
                         <StatusBadge label={meta.label} level={meta.level} />

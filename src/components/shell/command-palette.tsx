@@ -38,8 +38,8 @@ const orderResults: PaletteResult[] = mockOrders.map((order) => ({
   id: `order-${order.id}`,
   group: "Orders",
   label: order.orderNumber,
-  description: `${order.customerName} · ${order.styleCode} ${order.styleName}`,
-  href: `/orders?q=${encodeURIComponent(order.orderNumber)}`,
+  description: `${order.customerName} · ${order.lineItems.map((li) => li.styleCode).join(", ")}`,
+  href: `/orders/${order.id}`,
   icon: Package,
 }));
 

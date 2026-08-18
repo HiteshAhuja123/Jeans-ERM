@@ -63,40 +63,78 @@ export interface Customer {
   totalOrders: number;
 }
 
+/**
+ * Order lifecycle only — NOT production status. A "confirmed" order can be
+ * behind schedule (see `isDelayed`) without that changing its order status.
+ */
 export type OrderStatus =
   | "draft"
   | "confirmed"
   | "in_production"
-  | "delayed"
+  | "partially_completed"
   | "completed"
   | "dispatched"
   | "cancelled";
 
+export type OrderPriority = "low" | "normal" | "high" | "urgent";
+
+export interface OrderItemSizeQty {
+  sizeId: string;
+  quantity: number;
+}
+
 export interface OrderLineItem {
   id: string;
+  styleId: string;
   styleCode: string;
   styleName: string;
-  color: string;
-  sizeBreakdown: Record<string, number>;
+  colorId: string;
+  colorName: string;
+  /** Set when the style/color/size combination matches a real SKU master record. */
+  skuId?: string;
+  sizeBreakdown: OrderItemSizeQty[];
+  /** Sum of `sizeBreakdown` quantities, kept denormalized for display. */
   quantity: number;
+  unit: string;
+  notes?: string;
 }
 
 export interface Order {
   id: string;
   orderNumber: string;
   customerId: string;
+  /** Denormalized for display; source of truth is the Customer record. */
   customerName: string;
-  styleCode: string;
-  styleName: string;
-  fabric: string;
-  quantity: number;
-  quantityProduced: number;
-  status: OrderStatus;
+  /** Buyer's own PO/reference number, if any. */
+  customerReference?: string;
   orderDate: string;
+  /** Required/expected delivery date. */
   dueDate: string;
-  isDelayed: boolean;
+  priority: OrderPriority;
+  status: OrderStatus;
+  lineItems: OrderLineItem[];
+  /** Sum of all line item quantities. */
+  quantity: number;
+  /** Mock/visualization aggregate — not driven by real production transactions until a later phase. */
+  quantityProduced: number;
+  /** Visualization only — the production module owns real stage tracking in a later phase. */
   currentStage: ProductionStageKey;
-  priority: "low" | "normal" | "high";
+  /** True when the order is behind schedule — an alert flag, not a status. */
+  isDelayed: boolean;
+  deliveryLocation?: string;
+  shippingInstructions?: string;
+  /** Customer-visible notes. */
+  notes?: string;
+  /** Internal-only notes — never exposed in future customer-facing integrations. */
+  internalNotes?: string;
+}
+
+export interface OrderActivityEntry {
+  id: string;
+  orderId: string;
+  actor: string;
+  action: string;
+  timestamp: string;
 }
 
 // ---------------------------------------------------------------------------
