@@ -2,6 +2,8 @@ import type {
   AlertLevel,
   DefectSeverity,
   DispatchStatus,
+  MachineStatus,
+  MasterStatus,
   OrderStatus,
   ProductionStageStatus,
   PurchaseOrderStatus,
@@ -67,6 +69,18 @@ export const alertLevelMeta: Record<AlertLevel, StatusMeta> = {
   info: { label: "Info", level: "info" },
   warning: { label: "Warning", level: "warning" },
   critical: { label: "Critical", level: "critical" },
+};
+
+export const activeStatusMeta: Record<MasterStatus, StatusMeta> = {
+  active: { label: "Active", level: "success" },
+  inactive: { label: "Inactive", level: "neutral" },
+};
+
+export const machineStatusMeta: Record<MachineStatus, StatusMeta> = {
+  available: { label: "Available", level: "success" },
+  running: { label: "Running", level: "info" },
+  maintenance: { label: "Maintenance", level: "warning" },
+  inactive: { label: "Inactive", level: "neutral" },
 };
 
 export const statusLevelClasses: Record<StatusLevel, string> = {

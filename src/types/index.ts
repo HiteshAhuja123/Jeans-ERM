@@ -40,13 +40,25 @@ export interface StatusMeta {
 // Customers & Orders
 // ---------------------------------------------------------------------------
 
+export type MasterStatus = "active" | "inactive";
+
+export type CustomerType = "brand" | "retailer" | "wholesaler" | "individual";
+
 export interface Customer {
   id: string;
+  code: string;
   name: string;
+  type: CustomerType;
+  /** Derived "City, Country" display string, kept for Phase 1/2 screens. */
   location: string;
+  address?: string;
+  city: string;
+  country: string;
   contactPerson: string;
   email: string;
   phone: string;
+  status: MasterStatus;
+  notes?: string;
   activeOrders: number;
   totalOrders: number;
 }
@@ -174,11 +186,28 @@ export interface StockMovement {
 // Purchasing
 // ---------------------------------------------------------------------------
 
+export type SupplierType =
+  | "fabric"
+  | "accessories"
+  | "packaging"
+  | "washing_vendor"
+  | "processing_vendor"
+  | "other";
+
 export interface Supplier {
   id: string;
+  code: string;
   name: string;
+  type: SupplierType;
+  /** Coarse category, kept for existing Purchasing/Inventory consumers. */
   category: MaterialCategory;
   location: string;
+  address?: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  status: MasterStatus;
+  notes?: string;
   rating: number;
   activeOrders: number;
   onTimeDeliveryRate: number;
@@ -291,4 +320,166 @@ export interface ApprovalItem {
   requestedBy: string;
   amount?: number;
   timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Master Data (Phase 3)
+// ---------------------------------------------------------------------------
+
+export interface Product {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  description?: string;
+  status: MasterStatus;
+}
+
+export type Gender = "men" | "women" | "unisex" | "kids";
+
+export interface Style {
+  id: string;
+  styleCode: string;
+  name: string;
+  productId: string;
+  category: string;
+  gender: Gender;
+  fit: string;
+  fabricType: string;
+  /** Process ids, in suggested order — not an enforced workflow. */
+  defaultOperationIds: string[];
+  status: MasterStatus;
+}
+
+export interface Sku {
+  id: string;
+  skuCode: string;
+  styleId: string;
+  colorId: string;
+  sizeId: string;
+  status: MasterStatus;
+}
+
+export interface Size {
+  id: string;
+  code: string;
+  displayName: string;
+  sequence: number;
+  status: MasterStatus;
+}
+
+export interface Color {
+  id: string;
+  code: string;
+  name: string;
+  hex: string;
+  status: MasterStatus;
+}
+
+export interface UnitOfMeasure {
+  id: string;
+  code: string;
+  name: string;
+  status: MasterStatus;
+}
+
+/** Configurable, fine-grained grouping of materials (Denim, Zippers, Thread, Packaging, …). */
+export interface MaterialGroup {
+  id: string;
+  code: string;
+  name: string;
+  parentCategory: MaterialCategory;
+  status: MasterStatus;
+}
+
+export interface FabricDetails {
+  composition: string;
+  weightGsm?: number;
+  weightOz?: number;
+  widthCm: number;
+  stretch: boolean;
+}
+
+export interface Material {
+  id: string;
+  code: string;
+  name: string;
+  materialGroupId: string;
+  uomId: string;
+  supplierId?: string;
+  colorId?: string;
+  description?: string;
+  /** Present only for materials whose group's parentCategory is "fabric". */
+  fabricDetails?: FabricDetails;
+  status: MasterStatus;
+}
+
+export type WarehouseType = "raw_material" | "finished_goods" | "general";
+
+export interface Warehouse {
+  id: string;
+  code: string;
+  name: string;
+  type: WarehouseType;
+  address?: string;
+  status: MasterStatus;
+}
+
+export interface StorageLocation {
+  id: string;
+  code: string;
+  name: string;
+  warehouseId: string;
+  status: MasterStatus;
+}
+
+export interface Department {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  status: MasterStatus;
+}
+
+/** Master-data production line record — distinct from the dashboard's ProductionLineSummary. */
+export interface ProductionLine {
+  id: string;
+  code: string;
+  name: string;
+  departmentId: string;
+  capacity: number;
+  supervisor: string;
+  status: MasterStatus;
+}
+
+export type MachineStatus = "available" | "running" | "maintenance" | "inactive";
+
+export interface Machine {
+  id: string;
+  code: string;
+  name: string;
+  machineType: string;
+  departmentId: string;
+  productionLineId?: string;
+  status: MachineStatus;
+}
+
+export interface Employee {
+  id: string;
+  code: string;
+  name: string;
+  departmentId: string;
+  designation: string;
+  phone: string;
+  email?: string;
+  status: MasterStatus;
+}
+
+export interface Process {
+  id: string;
+  code: string;
+  name: string;
+  sequence: number;
+  departmentId?: string;
+  status: MasterStatus;
 }

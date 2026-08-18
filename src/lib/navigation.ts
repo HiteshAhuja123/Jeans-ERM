@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
+  Database,
   LayoutDashboard,
   Package,
   PackageSearch,
@@ -103,6 +104,17 @@ export const navGroups: NavGroup[] = [
         href: "/dispatch",
         icon: Ship,
         description: "Packing, finished goods & shipping",
+      },
+    ],
+  },
+  {
+    label: "Master Data",
+    items: [
+      {
+        label: "Master Data",
+        href: "/masters",
+        icon: Database,
+        description: "Customers, products, materials & factory setup",
       },
     ],
   },
