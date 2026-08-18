@@ -7,12 +7,18 @@ import { formatRelativeTime } from "@/lib/format";
 import { alertLevelMeta, statusLevelDotClasses } from "@/lib/status";
 import type { AlertItem } from "@/types";
 
-export function AlertsCard({ alerts }: { alerts: AlertItem[] }) {
+export function AlertsCard({
+  alerts,
+  viewAllHref = "/inventory",
+}: {
+  alerts: AlertItem[];
+  viewAllHref?: string;
+}) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle>Alerts</CardTitle>
-        <Link href="/inventory" className="text-xs font-medium text-primary hover:underline">
+        <Link href={viewAllHref} className="text-xs font-medium text-primary hover:underline">
           View all
         </Link>
       </CardHeader>

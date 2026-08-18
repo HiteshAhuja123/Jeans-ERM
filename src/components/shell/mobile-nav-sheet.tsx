@@ -14,6 +14,7 @@ import {
 import { navGroups } from "@/lib/navigation";
 import { NavLink } from "@/components/shell/nav-link";
 import { UserMenu } from "@/components/shell/user-menu";
+import { RoleSwitcher } from "@/components/shell/role-switcher";
 
 interface MobileNavSheetProps {
   trigger: React.ReactNode;
@@ -53,7 +54,8 @@ export function MobileNavSheet({ trigger }: MobileNavSheetProps) {
             ))}
           </div>
         </nav>
-        <div className="border-t border-sidebar-border p-3">
+        <div className="flex flex-col gap-3 border-t border-sidebar-border p-3">
+          <RoleSwitcher />
           <UserMenu variant="sidebar" />
         </div>
       </SheetContent>

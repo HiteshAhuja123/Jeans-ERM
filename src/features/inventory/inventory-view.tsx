@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowDownToLine, ArrowUpFromLine, PackageSearch, RefreshCw, Repeat } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
@@ -37,6 +38,20 @@ const categoryFilters: Array<{ value: MaterialCategory | "all"; label: string }>
   { value: "finished_good", label: "Finished Goods" },
 ];
 
+type StockFilter = "all" | "attention" | "healthy";
+
+const stockFilters: Array<{ value: StockFilter; label: string }> = [
+  { value: "all", label: "All stock levels" },
+  { value: "attention", label: "Needs attention" },
+  { value: "healthy", label: "Healthy" },
+];
+
+function matchesStockFilter(item: InventoryItem, filter: StockFilter) {
+  if (filter === "all") return true;
+  if (filter === "healthy") return item.stockLevel === "healthy";
+  return item.stockLevel === "low" || item.stockLevel === "critical" || item.stockLevel === "out_of_stock";
+}
+
 const movementIcons = {
   receipt: ArrowDownToLine,
   issue: ArrowUpFromLine,
@@ -50,14 +65,21 @@ function matchesSearch(item: InventoryItem, query: string) {
 }
 
 export function InventoryView() {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [category, setCategory] = useState<MaterialCategory | "all">("all");
+  const [stockFilter, setStockFilter] = useState<StockFilter>(
+    searchParams.get("stock") === "attention" || searchParams.get("stock") === "healthy"
+      ? (searchParams.get("stock") as StockFilter)
+      : "all",
+  );
 
-  const filteredItems = useMemo(() => {
-    return mockInventoryItems.filter(
-      (item) => matchesSearch(item, search) && (category === "all" || item.category === category),
-    );
-  }, [search, category]);
+  const filteredItems = mockInventoryItems.filter(
+    (item) =>
+      matchesSearch(item, search) &&
+      (category === "all" || item.category === category) &&
+      matchesStockFilter(item, stockFilter),
+  );
 
   const lowStockCount = mockInventoryItems.filter(
     (i) => i.stockLevel === "low" || i.stockLevel === "critical",
@@ -79,12 +101,14 @@ export function InventoryView() {
           value={lowStockCount.toString()}
           icon={ArrowDownToLine}
           accent={lowStockCount > 0 ? "warning" : "success"}
+          href="/inventory?stock=attention"
         />
         <StatCard
           label="Out of Stock"
           value={outOfStockCount.toString()}
           icon={PackageSearch}
           accent={outOfStockCount > 0 ? "critical" : "success"}
+          href="/inventory?stock=attention"
         />
         <StatCard label="Inventory Value" value={formatCurrency(totalValue)} icon={ArrowUpFromLine} />
       </div>
@@ -96,6 +120,18 @@ export function InventoryView() {
           </SelectTrigger>
           <SelectContent>
             {categoryFilters.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={stockFilter} onValueChange={(v) => setStockFilter(v as StockFilter)}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Stock level" />
+          </SelectTrigger>
+          <SelectContent>
+            {stockFilters.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

@@ -8,7 +8,7 @@ export const mockAlerts: AlertItem[] = [
     description: "Blocks cutting for ORD-2026-00456 (Westgate Garments).",
     module: "Inventory",
     timestamp: "2026-08-19T07:10:00+05:30",
-    href: "/inventory",
+    href: "/inventory?q=Denim+Indigo+Rigid",
   },
   {
     id: "alt-002",
@@ -17,7 +17,7 @@ export const mockAlerts: AlertItem[] = [
     description: "1,100 pcs left, reorder level is 5,000 pcs.",
     module: "Inventory",
     timestamp: "2026-08-19T06:40:00+05:30",
-    href: "/inventory",
+    href: "/inventory?q=Woven+Brand+Labels",
   },
   {
     id: "alt-003",
@@ -26,7 +26,7 @@ export const mockAlerts: AlertItem[] = [
     description: "Sewing line blocked by a critical zipper defect (22 pcs).",
     module: "Orders",
     timestamp: "2026-08-19T05:55:00+05:30",
-    href: "/orders",
+    href: "/orders?q=ORD-2026-00454",
   },
   {
     id: "alt-004",
@@ -35,7 +35,7 @@ export const mockAlerts: AlertItem[] = [
     description: "Cutting behind schedule — 340 / 1,800 pcs completed.",
     module: "Orders",
     timestamp: "2026-08-18T18:20:00+05:30",
-    href: "/orders",
+    href: "/orders?q=ORD-2026-00458",
   },
   {
     id: "alt-005",
@@ -44,7 +44,7 @@ export const mockAlerts: AlertItem[] = [
     description: "1,240 meters left, reorder level is 2,500 meters.",
     module: "Inventory",
     timestamp: "2026-08-18T14:05:00+05:30",
-    href: "/inventory",
+    href: "/inventory?q=Denim+Black",
   },
   {
     id: "alt-006",
@@ -53,7 +53,7 @@ export const mockAlerts: AlertItem[] = [
     description: "61 pcs flagged for fabric shading mismatch.",
     module: "Quality",
     timestamp: "2026-08-19T08:15:00+05:30",
-    href: "/quality",
+    href: "/quality?q=ORD-2026-00459",
   },
 ];
 

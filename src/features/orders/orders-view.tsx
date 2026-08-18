@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PackageX } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
@@ -39,16 +40,20 @@ function matchesSearch(order: Order, query: string) {
   return haystack.includes(query.toLowerCase());
 }
 
-export function OrdersView() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
+function isOrderStatus(value: string | null): value is OrderStatus {
+  return !!value && value in orderStatusLabels;
+}
 
-  const filteredOrders = useMemo(() => {
-    return mockOrders.filter(
-      (order) =>
-        matchesSearch(order, search) && (statusFilter === "all" || order.status === statusFilter),
-    );
-  }, [search, statusFilter]);
+export function OrdersView() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">(
+    isOrderStatus(searchParams.get("status")) ? (searchParams.get("status") as OrderStatus) : "all",
+  );
+
+  const filteredOrders = mockOrders.filter(
+    (order) => matchesSearch(order, search) && (statusFilter === "all" || order.status === statusFilter),
+  );
 
   const delayedCount = mockOrders.filter((o) => o.isDelayed).length;
 

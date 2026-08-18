@@ -6,6 +6,7 @@ import { Shirt } from "lucide-react";
 import { navGroups } from "@/lib/navigation";
 import { NavLink } from "@/components/shell/nav-link";
 import { UserMenu } from "@/components/shell/user-menu";
+import { RoleSwitcher } from "@/components/shell/role-switcher";
 
 export function AppSidebar() {
   return (
@@ -35,7 +36,8 @@ export function AppSidebar() {
         </div>
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="flex flex-col gap-3 border-t border-sidebar-border p-3">
+        <RoleSwitcher />
         <UserMenu variant="sidebar" />
       </div>
     </aside>
