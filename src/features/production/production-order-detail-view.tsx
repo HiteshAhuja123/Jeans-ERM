@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, FileText, PackageX } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, PackageX } from "lucide-react";
 
 import { DetailHeader } from "@/components/shared/detail-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LabeledProgress } from "@/components/shared/labeled-progress";
 import { ProductionStepper } from "@/components/shared/production-stepper";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
-import { defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta } from "@/lib/status";
+import { cuttingOrderStatusMeta, defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta } from "@/lib/status";
 import {
   buildProductionStageProgress,
   getDeliveryRisk,
@@ -21,12 +22,20 @@ import {
   getMaterialAvailability,
   getProductionOrderEditTier,
 } from "@/lib/production-utils";
+import {
+  getBundledQuantity,
+  getCuttingOrderCutQuantity,
+  getCuttingOrderGoodOutput,
+  getReadyForSewingQuantity,
+} from "@/lib/cutting-utils";
 import { MaterialAvailabilityBadge, MaterialRequirementTable } from "@/features/production/material-requirement-table";
 import { useMaterialRequirements } from "@/features/production/use-material-requirements";
 import { ProductionOrderQuickEditSheet } from "@/features/production/production-order-quick-edit-sheet";
 import { ProductionOrderStatusMenu } from "@/features/production/production-order-status-menu";
 import { ReleaseProductionOrderButton } from "@/features/production/release-production-order-button";
 import { productionOrderHooks } from "@/features/production/service";
+import { bundleHooks } from "@/features/cutting/bundle-service";
+import { cuttingBatchHooks, cuttingOrderHooks, cuttingOutputHooks } from "@/features/cutting/service";
 import { orderHooks } from "@/features/orders/service";
 import { productionLineHooks } from "@/features/production-lines/service";
 import { buildProductionOrderActivity } from "@/mock-data/production-activity";
@@ -37,6 +46,10 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
   const { data: po, isLoading } = productionOrderHooks.useDetail(id);
   const { data: order } = orderHooks.useDetail(po?.orderId);
   const { data: lines = [] } = productionLineHooks.useList();
+  const { data: cuttingOrders = [] } = cuttingOrderHooks.useList();
+  const { data: cuttingBatches = [] } = cuttingBatchHooks.useList();
+  const { data: cuttingOutputs = [] } = cuttingOutputHooks.useList();
+  const { data: bundles = [] } = bundleHooks.useList();
   const [editOpen, setEditOpen] = useState(false);
 
   const { lines: materialLines } = useMaterialRequirements(po?.styleId, po?.quantity ?? 0);
@@ -77,6 +90,13 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
   const activity = buildProductionOrderActivity(po);
   const inspections = order ? mockQcInspections.filter((i) => i.orderNumber === order.orderNumber) : [];
   const defects = order ? mockDefects.filter((d) => d.orderNumber === order.orderNumber) : [];
+  const cuttingOrder = cuttingOrders.find((c) => c.productionOrderId === po.id);
+  const cuttingCutQuantity = cuttingOrder ? getCuttingOrderCutQuantity(cuttingOrder.id, cuttingBatches, cuttingOutputs) : 0;
+  const cuttingGoodOutput = cuttingOrder ? getCuttingOrderGoodOutput(cuttingOrder.id, cuttingBatches, cuttingOutputs) : 0;
+  const cuttingBundledQuantity = cuttingOrder
+    ? cuttingBatches.filter((b) => b.cuttingOrderId === cuttingOrder.id).reduce((sum, b) => sum + getBundledQuantity(b.id, bundles), 0)
+    : 0;
+  const cuttingReadyForSewing = cuttingOrder ? getReadyForSewingQuantity(cuttingOrder.id, cuttingBatches, bundles) : 0;
   const canRelease = po.status === "draft" || po.status === "planned";
 
   return (
@@ -242,10 +262,38 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
               )}
             </TabsContent>
 
-            <TabsContent value="production" className="mt-4">
+            <TabsContent value="production" className="mt-4 flex flex-col gap-4">
               <Card className="overflow-x-auto p-5">
                 <ProductionStepper stages={stages} />
               </Card>
+              {cuttingOrder && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">Cutting</span>
+                    <StatusBadge label={cuttingOrderStatusMeta[cuttingOrder.status].label} level={cuttingOrderStatusMeta[cuttingOrder.status].level} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm">
+                    {[
+                      { label: "Planned", value: po.quantity },
+                      { label: "Cut", value: cuttingCutQuantity },
+                      { label: "Good Output", value: cuttingGoodOutput },
+                      { label: "Bundled", value: cuttingBundledQuantity },
+                      { label: "Ready for Sewing", value: cuttingReadyForSewing },
+                    ].map((step, index, arr) => (
+                      <div key={step.label} className="flex items-center gap-2">
+                        <div className="flex flex-col items-center rounded-lg border border-border bg-card px-3 py-2">
+                          <span className="text-xs text-muted-foreground">{step.label}</span>
+                          <span className="text-sm font-semibold text-foreground tabular-nums">{step.value.toLocaleString()}</span>
+                        </div>
+                        {index < arr.length - 1 && <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/cutting/orders/${cuttingOrder.id}`)}>
+                    View Cutting Order
+                  </Button>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="quality" className="mt-4 flex flex-col gap-3">

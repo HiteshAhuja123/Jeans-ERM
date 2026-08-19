@@ -488,6 +488,257 @@ export interface GoodsReceipt {
 }
 
 // ---------------------------------------------------------------------------
+// Cutting & Bundling (Phase 7)
+// ---------------------------------------------------------------------------
+
+export type CuttingOrderStatus =
+  | "pending"
+  | "material_check"
+  | "ready"
+  | "in_progress"
+  | "partially_completed"
+  | "completed"
+  | "on_hold"
+  | "cancelled";
+
+/**
+ * "What needs to be cut" for one Production Order — always traces back to exactly one
+ * Production Order. A Production Order never has more than one Cutting Order; cutting in
+ * stages is modelled through multiple Cutting Batches under the order's Cutting Plan instead.
+ */
+export interface CuttingOrder {
+  id: string;
+  cuttingOrderNumber: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  unit: string;
+  /** Pieces the factory intends to cut — normally equal to the Production Order quantity. */
+  requiredQuantity: number;
+  /** Fabric quantity required to cut `requiredQuantity`, inflated by the style BOM's wastage %. */
+  fabricRequired: number;
+  priority: OrderPriority;
+  status: CuttingOrderStatus;
+  supervisor?: string;
+  machineId?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  holdReason?: string;
+  createdDate: string;
+  notes?: string;
+}
+
+export type FabricAllocationStatus = "allocated" | "partially_issued" | "issued" | "cancelled";
+
+/** A soft hold of warehouse fabric against one Cutting Order — precedes the physical Fabric Issue. */
+export interface FabricAllocation {
+  id: string;
+  allocationNumber: string;
+  productionOrderId: string;
+  cuttingOrderId: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  date: string;
+  status: FabricAllocationStatus;
+}
+
+/** One physical hand-off of fabric to the cutting floor. A Cutting Order may have several — partial issues are normal. */
+export interface FabricIssue {
+  id: string;
+  cuttingOrderId: string;
+  fabricAllocationId: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  issuedBy: string;
+  issuedDate: string;
+  /** The StockMovement this issue created — traceability into Phase 5 Inventory. */
+  movementId: string;
+}
+
+export type CuttingPlanStatus = "draft" | "approved" | "in_progress" | "completed" | "cancelled";
+
+/** The cutting instruction for one Cutting Order — realized across one or more Cutting Batches. */
+export interface CuttingPlan {
+  id: string;
+  planNumber: string;
+  cuttingOrderId: string;
+  productionOrderId: string;
+  styleId: string;
+  styleCode: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  plannedQuantity: number;
+  plannedFabric: number;
+  unit: string;
+  plannedWastagePercent: number;
+  status: CuttingPlanStatus;
+  createdDate: string;
+  notes?: string;
+}
+
+export type CuttingBatchStatus = "pending" | "in_progress" | "on_hold" | "completed" | "cancelled";
+
+/**
+ * One cutting run within a Cutting Plan. Never assume one Production Order equals one Cutting
+ * Batch — factories routinely split cutting into several batches (by lay, by size run, etc.).
+ */
+export interface CuttingBatch {
+  id: string;
+  batchNumber: string;
+  cuttingPlanId: string;
+  cuttingOrderId: string;
+  productionOrderId: string;
+  styleId: string;
+  styleCode: string;
+  colorId: string;
+  colorName: string;
+  plannedQuantity: number;
+  operator?: string;
+  supervisor?: string;
+  machineId?: string;
+  plannedStart?: string;
+  actualStart?: string;
+  plannedEnd?: string;
+  actualEnd?: string;
+  status: CuttingBatchStatus;
+  holdReason?: string;
+  createdDate: string;
+}
+
+/** One "record output" event against a Cutting Batch. Batch totals are always the sum of its entries — never edited directly. */
+export interface CuttingOutput {
+  id: string;
+  cuttingBatchId: string;
+  cuttingOrderId: string;
+  /** Total pieces cut in this entry — good + rejected. */
+  cutQuantity: number;
+  rejectedQuantity: number;
+  /** Fabric consumed to produce this entry's cut quantity. */
+  fabricUsed: number;
+  unit: string;
+  /** Good-piece breakdown by size for this entry — preserves size/color traceability into Bundling. */
+  sizeBreakdown: OrderItemSizeQty[];
+  wastageReasonId?: string;
+  notes?: string;
+  recordedBy: string;
+  recordedDate: string;
+}
+
+/** Reason-level breakdown of one CuttingOutput entry's rejected quantity. */
+export interface CuttingRejection {
+  id: string;
+  cuttingOutputId: string;
+  cuttingBatchId: string;
+  cuttingOrderId: string;
+  reasonId: string;
+  quantity: number;
+  notes?: string;
+  recordedBy: string;
+  timestamp: string;
+}
+
+/** Unused fabric physically sent back from cutting to the warehouse. */
+export interface MaterialReturn {
+  id: string;
+  returnNumber: string;
+  cuttingOrderId: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  reason?: string;
+  returnedBy: string;
+  returnedDate: string;
+  movementId: string;
+}
+
+/**
+ * "In Sewing" / "Issued to Sewing" / "Completed" are future-state placeholders — Phase 7 never sets
+ * them. The final meaningful state this phase produces is "Ready for Sewing".
+ */
+export type BundleStatus =
+  | "created"
+  | "pending_verification"
+  | "ready_for_sewing"
+  | "issued_to_sewing"
+  | "in_sewing"
+  | "completed"
+  | "on_hold"
+  | "cancelled";
+
+export interface BundleItem {
+  id: string;
+  sizeId: string;
+  sizeCode: string;
+  quantity: number;
+}
+
+/** A traceable group of cut, good-quality pieces that will move through Sewing as one unit. */
+export interface Bundle {
+  id: string;
+  bundleNumber: string;
+  cuttingBatchId: string;
+  cuttingPlanId: string;
+  cuttingOrderId: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  skuId?: string;
+  colorId: string;
+  colorName: string;
+  materialId: string;
+  materialName: string;
+  /** Supports mixed-size bundles even though the Phase 7 UI only ever generates single-size ones. */
+  items: BundleItem[];
+  /** Sum of `items` quantities, denormalized for display. */
+  quantity: number;
+  status: BundleStatus;
+  verifiedBy?: string;
+  verifiedDate?: string;
+  createdBy: string;
+  createdDate: string;
+}
+
+/** Configurable reason code — backs both Wastage Reasons and Cutting Rejection Reasons. */
+export interface ReasonCode {
+  id: string;
+  label: string;
+  status: MasterStatus;
+}
+
+// ---------------------------------------------------------------------------
 // Quality Control
 // ---------------------------------------------------------------------------
 

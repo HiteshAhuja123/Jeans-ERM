@@ -92,6 +92,29 @@ interface AdjustStockInput {
   performedBy: string;
 }
 
+interface IssueStockInput {
+  materialId: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  reference: string;
+  performedBy: string;
+}
+
+interface ReturnStockInput {
+  materialId: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  reference: string;
+  reason?: string;
+  performedBy: string;
+}
+
 interface TransferStockInput {
   materialId: string;
   materialName: string;
@@ -174,6 +197,55 @@ export const inventoryService = {
     return delay(updated);
   },
 
+  /** Physical hand-off out of the warehouse (e.g. fabric issued to Cutting) — reduces on-hand, logs an "issue" movement. */
+  issueStock: (input: IssueStockInput) => {
+    const timestamp = new Date().toISOString();
+    const updated = updateBalance(input.materialId, (balance) => ({
+      ...balance,
+      onHand: Math.max(0, balance.onHand - input.quantity),
+      locations: applyLocationDelta(balance.locations, input.warehouseId, input.locationId, -input.quantity),
+      lastMovementDate: timestamp.slice(0, 10),
+    }));
+    recordMovement({
+      materialId: input.materialId,
+      materialName: input.materialName,
+      type: "issue",
+      quantity: -input.quantity,
+      unit: input.unit,
+      fromWarehouseId: input.warehouseId,
+      fromLocationId: input.locationId,
+      reference: input.reference,
+      performedBy: input.performedBy,
+      timestamp,
+    });
+    return delay(updated);
+  },
+
+  /** Unused material physically sent back to the warehouse (e.g. leftover fabric from Cutting) — increases on-hand, logs a "return" movement. */
+  returnStock: (input: ReturnStockInput) => {
+    const timestamp = new Date().toISOString();
+    const updated = updateBalance(input.materialId, (balance) => ({
+      ...balance,
+      onHand: balance.onHand + input.quantity,
+      locations: applyLocationDelta(balance.locations, input.warehouseId, input.locationId, input.quantity),
+      lastMovementDate: timestamp.slice(0, 10),
+    }));
+    recordMovement({
+      materialId: input.materialId,
+      materialName: input.materialName,
+      type: "return",
+      quantity: input.quantity,
+      unit: input.unit,
+      toWarehouseId: input.warehouseId,
+      toLocationId: input.locationId,
+      reference: input.reference,
+      reason: input.reason,
+      performedBy: input.performedBy,
+      timestamp,
+    });
+    return delay(updated);
+  },
+
   /** Moves stock between locations only — total on-hand quantity never changes. */
   transferStock: (input: TransferStockInput) => {
     const timestamp = new Date().toISOString();
@@ -231,6 +303,14 @@ export const inventoryHooks = {
   useReceiveStock: () => {
     const invalidate = useInvalidateInventory();
     return useMutation({ mutationFn: inventoryService.receiveStock, onSuccess: invalidate });
+  },
+  useIssueStock: () => {
+    const invalidate = useInvalidateInventory();
+    return useMutation({ mutationFn: inventoryService.issueStock, onSuccess: invalidate });
+  },
+  useReturnStock: () => {
+    const invalidate = useInvalidateInventory();
+    return useMutation({ mutationFn: inventoryService.returnStock, onSuccess: invalidate });
   },
   useAdjustStock: () => {
     const invalidate = useInvalidateInventory();

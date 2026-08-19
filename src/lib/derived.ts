@@ -1,7 +1,9 @@
+import { getAvailableFabric, getMaterialReadiness } from "@/lib/cutting-utils";
 import { getStockStatus } from "@/lib/inventory-utils";
 import {
   mockAlerts,
   mockApprovals,
+  mockCuttingOrders,
   mockDailyProduction,
   mockDefects,
   mockInventoryBalances,
@@ -12,6 +14,8 @@ import {
 } from "@/mock-data";
 
 const activeProductionStatuses = ["draft", "planned", "released", "in_progress", "on_hold", "partially_completed"];
+const notStartedCuttingStatuses = ["pending", "material_check", "ready"];
+const todayDate = new Date().toISOString().slice(0, 10);
 
 /**
  * Small aggregate counts derived from mock data, shared by the sidebar badges,
@@ -31,6 +35,15 @@ export const navBadgeCounts = {
   productionAlerts: mockProductionOrders.filter(
     (po) => activeProductionStatuses.includes(po.status) && (po.status === "on_hold" || !po.productionLineId),
   ).length,
+  cuttingAlerts: mockCuttingOrders.filter((order) => {
+    if (order.status === "on_hold") return true;
+    if (order.plannedEnd && order.plannedEnd < todayDate && !["completed", "cancelled"].includes(order.status)) return true;
+    if (notStartedCuttingStatuses.includes(order.status)) {
+      const balance = mockInventoryBalances.find((b) => b.materialId === order.materialId);
+      return getMaterialReadiness(order.fabricRequired, getAvailableFabric(balance)) === "shortage";
+    }
+    return false;
+  }).length,
 };
 
 export const notificationCount = mockAlerts.length;

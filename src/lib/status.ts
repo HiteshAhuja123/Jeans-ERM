@@ -1,7 +1,12 @@
 import type {
   AlertLevel,
+  BundleStatus,
+  CuttingBatchStatus,
+  CuttingOrderStatus,
+  CuttingPlanStatus,
   DefectSeverity,
   DispatchStatus,
+  FabricAllocationStatus,
   MachineStatus,
   MasterStatus,
   OrderPriority,
@@ -143,6 +148,51 @@ export const machineStatusMeta: Record<MachineStatus, StatusMeta> = {
   running: { label: "Running", level: "info" },
   maintenance: { label: "Maintenance", level: "warning" },
   inactive: { label: "Inactive", level: "neutral" },
+};
+
+export const cuttingOrderStatusMeta: Record<CuttingOrderStatus, StatusMeta> = {
+  pending: { label: "Pending", level: "neutral" },
+  material_check: { label: "Material Check", level: "warning" },
+  ready: { label: "Ready", level: "info" },
+  in_progress: { label: "In Progress", level: "info" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  on_hold: { label: "On Hold", level: "warning" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const fabricAllocationStatusMeta: Record<FabricAllocationStatus, StatusMeta> = {
+  allocated: { label: "Allocated", level: "info" },
+  partially_issued: { label: "Partially Issued", level: "warning" },
+  issued: { label: "Issued", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const cuttingPlanStatusMeta: Record<CuttingPlanStatus, StatusMeta> = {
+  draft: { label: "Draft", level: "neutral" },
+  approved: { label: "Approved", level: "info" },
+  in_progress: { label: "In Progress", level: "info" },
+  completed: { label: "Completed", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const cuttingBatchStatusMeta: Record<CuttingBatchStatus, StatusMeta> = {
+  pending: { label: "Pending", level: "neutral" },
+  in_progress: { label: "In Progress", level: "info" },
+  on_hold: { label: "On Hold", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const bundleStatusMeta: Record<BundleStatus, StatusMeta> = {
+  created: { label: "Created", level: "neutral" },
+  pending_verification: { label: "Pending Verification", level: "warning" },
+  ready_for_sewing: { label: "Ready for Sewing", level: "success" },
+  issued_to_sewing: { label: "Issued to Sewing", level: "info" },
+  in_sewing: { label: "In Sewing", level: "info" },
+  completed: { label: "Completed", level: "success" },
+  on_hold: { label: "On Hold", level: "warning" },
+  cancelled: { label: "Cancelled", level: "neutral" },
 };
 
 export const statusLevelClasses: Record<StatusLevel, string> = {

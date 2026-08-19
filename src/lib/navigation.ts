@@ -4,9 +4,11 @@ import {
   CalendarDays,
   ClipboardList,
   Database,
+  Layers,
   LayoutDashboard,
   Package,
   PackageSearch,
+  Scissors,
   ShoppingCart,
   Ship,
   Settings,
@@ -20,7 +22,14 @@ export interface NavItem {
   icon: LucideIcon;
   description: string;
   /** Shown as a small tag on the sidebar item, e.g. an open-item count. */
-  badgeKey?: "delayedOrders" | "lowStock" | "openDefects" | "pendingApprovals" | "openPurchaseOrders" | "productionAlerts";
+  badgeKey?:
+    | "delayedOrders"
+    | "lowStock"
+    | "openDefects"
+    | "pendingApprovals"
+    | "openPurchaseOrders"
+    | "productionAlerts"
+    | "cuttingAlerts";
 }
 
 export interface NavGroup {
@@ -79,6 +88,24 @@ export const navGroups: NavGroup[] = [
         href: "/production/schedule",
         icon: CalendarDays,
         description: "Line schedule & calendar",
+      },
+    ],
+  },
+  {
+    label: "Cutting",
+    items: [
+      {
+        label: "Cutting",
+        href: "/cutting",
+        icon: Scissors,
+        description: "Cutting dashboard, work queue & batches",
+        badgeKey: "cuttingAlerts",
+      },
+      {
+        label: "Bundles",
+        href: "/cutting/bundles",
+        icon: Layers,
+        description: "Bundle traceability & ready-for-sewing status",
       },
     ],
   },
@@ -167,7 +194,7 @@ export const navGroups: NavGroup[] = [
 export const allNavItems: NavItem[] = navGroups.flatMap((group) => group.items);
 
 /** Primary destinations surfaced in the mobile bottom nav (max 5). */
-const mobilePrimaryHrefs = ["/dashboard", "/orders", "/production", "/inventory"];
+const mobilePrimaryHrefs = ["/dashboard", "/orders", "/production", "/cutting", "/inventory"];
 export const mobilePrimaryNav: NavItem[] = mobilePrimaryHrefs.map(
   (href) => allNavItems.find((item) => item.href === href)!,
 );
