@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
 import { buildStageProgress, getOrderAlerts, getOrderEditTier } from "@/lib/order-utils";
-import { orderPriorityMeta, orderStatusMeta } from "@/lib/status";
+import { orderPriorityMeta, orderStatusMeta, productionOrderStatusMeta } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { buildOrderActivity } from "@/mock-data/order-activity";
 import { OrderQuickEditSheet } from "@/features/orders/order-quick-edit-sheet";
@@ -23,6 +23,7 @@ import { OrderStatusMenu } from "@/features/orders/order-status-menu";
 import { orderHooks } from "@/features/orders/service";
 import { useDuplicateOrder } from "@/features/orders/use-duplicate-order";
 import { sizeHooks } from "@/features/sizes/service";
+import { productionOrderHooks } from "@/features/production/service";
 import type { StatusLevel } from "@/types";
 
 const alertBoxClasses: Record<StatusLevel, string> = {
@@ -37,6 +38,7 @@ export function OrderDetailView({ id }: { id: string }) {
   const router = useRouter();
   const { data: order, isLoading } = orderHooks.useDetail(id);
   const { data: sizes = [] } = sizeHooks.useList();
+  const { data: allProductionOrders = [] } = productionOrderHooks.useList();
   const { duplicate, isDuplicating } = useDuplicateOrder();
   const [quickEditOpen, setQuickEditOpen] = useState(false);
 
@@ -69,6 +71,7 @@ export function OrderDetailView({ id }: { id: string }) {
   const alerts = getOrderAlerts(order);
   const stages = buildStageProgress(order);
   const activity = buildOrderActivity(order);
+  const productionOrders = allProductionOrders.filter((po) => po.orderId === order.id);
   const pending = Math.max(0, order.quantity - order.quantityProduced);
 
   function handleEdit() {
@@ -245,10 +248,34 @@ export function OrderDetailView({ id }: { id: string }) {
               ))}
             </TabsContent>
 
-            <TabsContent value="production" className="mt-4">
+            <TabsContent value="production" className="mt-4 flex flex-col gap-4">
               <Card className="overflow-x-auto p-5">
                 <ProductionStepper stages={stages} />
               </Card>
+
+              {productionOrders.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-semibold text-foreground">Production Orders</span>
+                  {productionOrders.map((po) => {
+                    const meta = productionOrderStatusMeta[po.status];
+                    return (
+                      <Card
+                        key={po.id}
+                        className="flex cursor-pointer items-center justify-between p-4 hover:border-primary/40"
+                        onClick={() => router.push(`/production/orders/${po.id}`)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-foreground">{po.productionOrderNumber}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {po.styleCode} · {po.colorName} · {po.quantity.toLocaleString()} pcs
+                          </span>
+                        </div>
+                        <StatusBadge label={meta.label} level={meta.level} />
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="activity" className="mt-4">

@@ -107,6 +107,20 @@ interface TransferStockInput {
 
 export const inventoryService = {
   listBalances: () => delay([...balances]),
+
+  /** Soft-holds material against a future consumption — no physical movement, so no StockMovement is logged. */
+  reserveStock: (materialId: string, quantity: number) => {
+    const updated = updateBalance(materialId, (balance) => ({ ...balance, reserved: balance.reserved + quantity }));
+    return delay(updated);
+  },
+
+  releaseReservedStock: (materialId: string, quantity: number) => {
+    const updated = updateBalance(materialId, (balance) => ({
+      ...balance,
+      reserved: Math.max(0, balance.reserved - quantity),
+    }));
+    return delay(updated);
+  },
   getBalanceByMaterialId: (materialId: string) => delay(balances.find((balance) => balance.materialId === materialId)),
   listMovements: () => delay([...movements]),
   listMovementsByMaterial: (materialId: string) =>
@@ -225,5 +239,21 @@ export const inventoryHooks = {
   useTransferStock: () => {
     const invalidate = useInvalidateInventory();
     return useMutation({ mutationFn: inventoryService.transferStock, onSuccess: invalidate });
+  },
+  useReserveStock: () => {
+    const invalidate = useInvalidateInventory();
+    return useMutation({
+      mutationFn: ({ materialId, quantity }: { materialId: string; quantity: number }) =>
+        inventoryService.reserveStock(materialId, quantity),
+      onSuccess: invalidate,
+    });
+  },
+  useReleaseReservedStock: () => {
+    const invalidate = useInvalidateInventory();
+    return useMutation({
+      mutationFn: ({ materialId, quantity }: { materialId: string; quantity: number }) =>
+        inventoryService.releaseReservedStock(materialId, quantity),
+      onSuccess: invalidate,
+    });
   },
 };

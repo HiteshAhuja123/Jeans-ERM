@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
+  CalendarDays,
+  ClipboardList,
   Database,
   LayoutDashboard,
   Package,
@@ -18,7 +20,7 @@ export interface NavItem {
   icon: LucideIcon;
   description: string;
   /** Shown as a small tag on the sidebar item, e.g. an open-item count. */
-  badgeKey?: "delayedOrders" | "lowStock" | "openDefects" | "pendingApprovals" | "openPurchaseOrders";
+  badgeKey?: "delayedOrders" | "lowStock" | "openDefects" | "pendingApprovals" | "openPurchaseOrders" | "productionAlerts";
 }
 
 export interface NavGroup {
@@ -58,6 +60,25 @@ export const navGroups: NavGroup[] = [
         href: "/production",
         icon: Boxes,
         description: "Cutting, sewing, washing, finishing",
+        badgeKey: "productionAlerts",
+      },
+      {
+        label: "Planning",
+        href: "/production/planning",
+        icon: ClipboardList,
+        description: "What needs to be manufactured next",
+      },
+      {
+        label: "Production Orders",
+        href: "/production/orders",
+        icon: Package,
+        description: "Production orders & plans",
+      },
+      {
+        label: "Schedule",
+        href: "/production/schedule",
+        icon: CalendarDays,
+        description: "Line schedule & calendar",
       },
     ],
   },
@@ -146,9 +167,7 @@ export const navGroups: NavGroup[] = [
 export const allNavItems: NavItem[] = navGroups.flatMap((group) => group.items);
 
 /** Primary destinations surfaced in the mobile bottom nav (max 5). */
-export const mobilePrimaryNav: NavItem[] = [
-  allNavItems[0], // Dashboard
-  allNavItems[1], // Orders
-  allNavItems[2], // Production
-  allNavItems[3], // Inventory
-];
+const mobilePrimaryHrefs = ["/dashboard", "/orders", "/production", "/inventory"];
+export const mobilePrimaryNav: NavItem[] = mobilePrimaryHrefs.map(
+  (href) => allNavItems.find((item) => item.href === href)!,
+);

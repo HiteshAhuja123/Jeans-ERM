@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ProductionDashboardView } from "@/features/production/production-dashboard-view";
+import { PlanningBoardView } from "@/features/production/planning-board-view";
 import { ListPageSkeleton } from "@/components/shared/list-page-skeleton";
 
-export const metadata: Metadata = {
-  title: "Production",
-};
+export const metadata: Metadata = { title: "Production Planning" };
 
-export default function ProductionPage() {
+export default function ProductionPlanningPage() {
   return (
     <Suspense fallback={<ListPageSkeleton />}>
-      <ProductionDashboardView />
+      <PlanningBoardView />
     </Suspense>
   );
 }

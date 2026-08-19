@@ -6,9 +6,12 @@ import {
   mockDefects,
   mockInventoryBalances,
   mockOrders,
+  mockProductionOrders,
   mockPurchaseOrders,
   mockQcInspections,
 } from "@/mock-data";
+
+const activeProductionStatuses = ["draft", "planned", "released", "in_progress", "on_hold", "partially_completed"];
 
 /**
  * Small aggregate counts derived from mock data, shared by the sidebar badges,
@@ -24,6 +27,9 @@ export const navBadgeCounts = {
   pendingApprovals: mockApprovals.length,
   openPurchaseOrders: mockPurchaseOrders.filter((po) =>
     ["pending_approval", "approved", "sent", "partially_received"].includes(po.status),
+  ).length,
+  productionAlerts: mockProductionOrders.filter(
+    (po) => activeProductionStatuses.includes(po.status) && (po.status === "on_hold" || !po.productionLineId),
   ).length,
 };
 

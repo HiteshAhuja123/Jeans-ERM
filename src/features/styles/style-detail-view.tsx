@@ -13,12 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { activeStatusMeta } from "@/lib/status";
 import { styleHooks } from "@/features/styles/service";
 import { StyleFormSheet } from "@/features/styles/style-form-sheet";
+import { BomEditor } from "@/features/production/bom-editor";
+import { bomHooks } from "@/features/production/service";
 import { mockColors, mockProcesses, mockProducts, mockSizes, mockSkus } from "@/mock-data";
 
 export function StyleDetailView({ id }: { id: string }) {
   const router = useRouter();
   const { data: style, isLoading } = styleHooks.useDetail(id);
   const { data: styles = [] } = styleHooks.useList();
+  const { data: bom, isLoading: bomLoading } = bomHooks.useDetail(id);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const skus = useMemo(() => mockSkus.filter((s) => s.styleId === id), [id]);
@@ -68,6 +71,7 @@ export function StyleDetailView({ id }: { id: string }) {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="skus">SKUs ({skus.length})</TabsTrigger>
               <TabsTrigger value="operations">Default Operations ({operations.length})</TabsTrigger>
+              <TabsTrigger value="bom">Bill of Materials ({bom?.items.length ?? 0})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-4">
@@ -144,6 +148,14 @@ export function StyleDetailView({ id }: { id: string }) {
                       </span>
                     ))}
                 </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="bom" className="mt-4">
+              {bomLoading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <BomEditor key={style.id} style={style} bom={bom} />
               )}
             </TabsContent>
           </Tabs>

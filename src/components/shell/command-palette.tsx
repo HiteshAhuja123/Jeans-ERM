@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Package, PackageSearch, Search, ShoppingCart } from "lucide-react";
+import { Boxes, Building2, Package, PackageSearch, Search, ShoppingCart } from "lucide-react";
 
 import {
   CommandDialog,
@@ -14,7 +14,14 @@ import {
 } from "@/components/ui/command";
 import { Kbd } from "@/components/ui/kbd";
 import { allNavItems } from "@/lib/navigation";
-import { mockCustomers, mockMaterials, mockOrders, mockPurchaseOrders, mockSuppliers } from "@/mock-data";
+import {
+  mockCustomers,
+  mockMaterials,
+  mockOrders,
+  mockProductionOrders,
+  mockPurchaseOrders,
+  mockSuppliers,
+} from "@/mock-data";
 
 interface PaletteResult {
   id: string;
@@ -81,9 +88,19 @@ const purchaseOrderResults: PaletteResult[] = mockPurchaseOrders.map((po) => ({
   icon: ShoppingCart,
 }));
 
+const productionOrderResults: PaletteResult[] = mockProductionOrders.map((po) => ({
+  id: `prod-${po.id}`,
+  group: "Production",
+  label: po.productionOrderNumber,
+  description: `${po.customerName} · ${po.styleCode} · ${po.quantity.toLocaleString()} pcs`,
+  href: `/production/orders/${po.id}`,
+  icon: Boxes,
+}));
+
 const groupedResults: Array<{ group: string; items: PaletteResult[] }> = [
   { group: "Pages", items: pageResults },
   { group: "Orders", items: orderResults },
+  { group: "Production", items: productionOrderResults },
   { group: "Customers", items: customerResults },
   { group: "Inventory", items: inventoryResults },
   { group: "Purchasing", items: purchaseOrderResults },

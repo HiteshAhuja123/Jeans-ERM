@@ -1,0 +1,309 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, FileText, PackageX } from "lucide-react";
+
+import { DetailHeader } from "@/components/shared/detail-header";
+import { EmptyState } from "@/components/shared/empty-state";
+import { LabeledProgress } from "@/components/shared/labeled-progress";
+import { ProductionStepper } from "@/components/shared/production-stepper";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate } from "@/lib/format";
+import { defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta } from "@/lib/status";
+import {
+  buildProductionStageProgress,
+  getDeliveryRisk,
+  getLineCapacitySnapshot,
+  getMaterialAvailability,
+  getProductionOrderEditTier,
+} from "@/lib/production-utils";
+import { MaterialAvailabilityBadge, MaterialRequirementTable } from "@/features/production/material-requirement-table";
+import { useMaterialRequirements } from "@/features/production/use-material-requirements";
+import { ProductionOrderQuickEditSheet } from "@/features/production/production-order-quick-edit-sheet";
+import { ProductionOrderStatusMenu } from "@/features/production/production-order-status-menu";
+import { ReleaseProductionOrderButton } from "@/features/production/release-production-order-button";
+import { productionOrderHooks } from "@/features/production/service";
+import { orderHooks } from "@/features/orders/service";
+import { productionLineHooks } from "@/features/production-lines/service";
+import { buildProductionOrderActivity } from "@/mock-data/production-activity";
+import { mockDefects, mockQcInspections, mockSkus } from "@/mock-data";
+
+export function ProductionOrderDetailView({ id }: { id: string }) {
+  const router = useRouter();
+  const { data: po, isLoading } = productionOrderHooks.useDetail(id);
+  const { data: order } = orderHooks.useDetail(po?.orderId);
+  const { data: lines = [] } = productionLineHooks.useList();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const { lines: materialLines } = useMaterialRequirements(po?.styleId, po?.quantity ?? 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-8 w-64" />
+        <Card className="p-5">
+          <Skeleton className="h-32 w-full" />
+        </Card>
+      </div>
+    );
+  }
+
+  if (!po) {
+    return (
+      <EmptyState
+        icon={PackageX}
+        title="Production order not found"
+        description="This production order may have been removed."
+        action={{ label: "Back to Production Orders", onClick: () => router.push("/production/orders") }}
+      />
+    );
+  }
+
+  const statusMeta = productionOrderStatusMeta[po.status];
+  const priorityMeta = orderPriorityMeta[po.priority];
+  const editTier = getProductionOrderEditTier(po.status);
+  const line = lines.find((l) => l.id === po.productionLineId);
+  const materialAvailability = getMaterialAvailability(materialLines);
+  const capacitySnapshot = line ? getLineCapacitySnapshot(line, po.plannedStart, [po]) : undefined;
+  const capacityOk = capacitySnapshot ? capacitySnapshot.planned <= capacitySnapshot.dailyCapacity : true;
+  const deliveryRisk = order ? getDeliveryRisk(po, order) : undefined;
+  const skus = mockSkus.filter((s) => s.styleId === po.styleId && s.colorId === po.colorId);
+  const stages = buildProductionStageProgress(po);
+  const activity = buildProductionOrderActivity(po);
+  const inspections = order ? mockQcInspections.filter((i) => i.orderNumber === order.orderNumber) : [];
+  const defects = order ? mockDefects.filter((d) => d.orderNumber === order.orderNumber) : [];
+  const canRelease = po.status === "draft" || po.status === "planned";
+
+  return (
+    <div className="flex flex-col gap-6">
+      <DetailHeader
+        backHref="/production/orders"
+        backLabel="Back to Production Orders"
+        title={po.productionOrderNumber}
+        subtitle={`${po.styleCode} · ${po.colorName} · ${po.quantity.toLocaleString()} pcs`}
+        statusLabel={statusMeta.label}
+        statusLevel={statusMeta.level}
+        onEdit={editTier === "readonly" ? undefined : () => setEditOpen(true)}
+        actions={
+          <>
+            {canRelease && (
+              <ReleaseProductionOrderButton
+                productionOrder={po}
+                materialAvailability={materialAvailability}
+                materialLines={materialLines}
+                capacityOk={capacityOk}
+              />
+            )}
+            <ProductionOrderStatusMenu productionOrder={po} />
+          </>
+        }
+        tabs={
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="materials">Materials</TabsTrigger>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsTrigger value="production">Production</TabsTrigger>
+              <TabsTrigger value="quality">Quality</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="mt-4 flex flex-col gap-4">
+              {deliveryRisk?.atRisk && (
+                <div className="flex items-center gap-2 rounded-lg border border-critical/25 bg-critical-subtle px-3 py-2 text-sm text-critical">
+                  <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+                  Delivery risk — planned completion is {Math.abs(deliveryRisk.bufferDays)} day
+                  {Math.abs(deliveryRisk.bufferDays) === 1 ? "" : "s"} after the customer&apos;s delivery date.
+                </div>
+              )}
+
+              <Card className="flex flex-col gap-3 p-5">
+                <LabeledProgress
+                  label="Production Progress"
+                  current={po.quantityProduced}
+                  total={po.quantity}
+                  level={deliveryRisk?.atRisk ? "critical" : "info"}
+                />
+              </Card>
+
+              <Card className="grid grid-cols-2 gap-5 p-5 sm:grid-cols-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Customer</span>
+                  <span className="text-sm font-medium text-foreground">{po.customerName}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Customer Order</span>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/orders/${po.orderId}`)}
+                    className="w-fit text-left text-sm font-medium text-primary hover:underline"
+                  >
+                    {po.orderNumber}
+                  </button>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Priority</span>
+                  <StatusBadge label={priorityMeta.label} level={priorityMeta.level} hideIcon />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Style / Color</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {po.styleCode} · {po.colorName}
+                  </span>
+                </div>
+                {skus.length > 0 && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs text-muted-foreground">SKUs</span>
+                    <span className="text-sm font-medium text-foreground">{skus.map((s) => s.skuCode).join(", ")}</span>
+                  </div>
+                )}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Planned Start / End</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {formatDate(po.plannedStart)} – {formatDate(po.plannedEnd)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Production Line</span>
+                  <span className="text-sm font-medium text-foreground">{line?.name ?? "Unassigned"}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Supervisor</span>
+                  <span className="text-sm font-medium text-foreground">{po.supervisor ?? "—"}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Material Status</span>
+                  <MaterialAvailabilityBadge availability={materialAvailability} />
+                </div>
+                {order && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs text-muted-foreground">Delivery Date</span>
+                    <span className="text-sm font-medium text-foreground">{formatDate(order.dueDate)}</span>
+                  </div>
+                )}
+                {po.notes && (
+                  <div className="col-span-2 flex flex-col gap-0.5 sm:col-span-3">
+                    <span className="text-xs text-muted-foreground">Notes</span>
+                    <span className="text-sm text-foreground">{po.notes}</span>
+                  </div>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="materials" className="mt-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">Material Requirement</span>
+                <MaterialAvailabilityBadge availability={materialAvailability} />
+              </div>
+              {materialLines.length === 0 ? (
+                <EmptyState icon={PackageX} title="No BOM defined" description="Add a Bill of Materials to this style to calculate requirements." />
+              ) : (
+                <MaterialRequirementTable lines={materialLines} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="schedule" className="mt-4 flex flex-col gap-4">
+              <Card className="grid grid-cols-2 gap-5 p-5 sm:grid-cols-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Planned Start</span>
+                  <span className="text-sm font-medium text-foreground">{formatDate(po.plannedStart)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Planned End</span>
+                  <span className="text-sm font-medium text-foreground">{formatDate(po.plannedEnd)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Production Line</span>
+                  <span className="text-sm font-medium text-foreground">{line?.name ?? "Unassigned"}</span>
+                </div>
+              </Card>
+              {capacitySnapshot && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <span className="text-sm font-semibold text-foreground">Line Capacity on {formatDate(po.plannedStart)}</span>
+                  <LabeledProgress
+                    label={capacitySnapshot.lineName}
+                    current={capacitySnapshot.planned}
+                    total={capacitySnapshot.dailyCapacity}
+                    valueLabel={`${capacitySnapshot.planned.toLocaleString()} / ${capacitySnapshot.dailyCapacity.toLocaleString()} pcs`}
+                    level={capacitySnapshot.utilizationPercent > 100 ? "critical" : capacitySnapshot.utilizationPercent >= 90 ? "warning" : "info"}
+                  />
+                  {capacitySnapshot.utilizationPercent > 100 && (
+                    <p className="flex items-center gap-1.5 text-xs text-critical">
+                      <AlertTriangle className="size-3.5" aria-hidden="true" /> This line is over capacity on this date.
+                    </p>
+                  )}
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="production" className="mt-4">
+              <Card className="overflow-x-auto p-5">
+                <ProductionStepper stages={stages} />
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="quality" className="mt-4 flex flex-col gap-3">
+              {inspections.length === 0 && defects.length === 0 ? (
+                <EmptyState icon={FileText} title="No quality data yet" description="Inspections and defects logged against this order will appear here." />
+              ) : (
+                <>
+                  {inspections.map((inspection) => (
+                    <Card key={inspection.id} className="flex items-center justify-between p-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">Inspection · {inspection.stage}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {inspection.passedQty.toLocaleString()} passed / {inspection.inspectedQty.toLocaleString()} inspected · {inspection.inspector}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{inspection.passRate}%</span>
+                    </Card>
+                  ))}
+                  {defects.map((defect) => {
+                    const meta = defectSeverityMeta[defect.severity];
+                    return (
+                      <Card key={defect.id} className="flex items-center justify-between p-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-foreground">{defect.defectType}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {defect.quantity.toLocaleString()} pcs · {defect.stage} · {formatDate(defect.reportedDate)}
+                          </span>
+                        </div>
+                        <StatusBadge label={meta.label} level={meta.level} hideIcon />
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="activity" className="mt-4">
+              <div className="flex flex-col gap-3">
+                {activity.map((entry) => (
+                  <Card key={entry.id} className="flex items-start justify-between gap-3 p-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-foreground">{entry.action}</span>
+                      <span className="text-xs text-muted-foreground">{entry.actor}</span>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatDate(entry.timestamp)}</span>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="documents" className="mt-4">
+              <EmptyState icon={FileText} title="Documents coming soon" description="Cutting tickets and production documents will appear here in a later phase." />
+            </TabsContent>
+          </Tabs>
+        }
+      />
+
+      <ProductionOrderQuickEditSheet open={editOpen} onOpenChange={setEditOpen} productionOrder={po} />
+    </div>
+  );
+}

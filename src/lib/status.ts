@@ -6,6 +6,8 @@ import type {
   MasterStatus,
   OrderPriority,
   OrderStatus,
+  ProductionOrderStatus,
+  ProductionPlanStatus,
   ProductionStageStatus,
   PurchaseOrderStatus,
   PurchaseRequestPriority,
@@ -32,6 +34,26 @@ export const orderPriorityMeta: Record<OrderPriority, StatusMeta> = {
   normal: { label: "Normal", level: "info" },
   high: { label: "High", level: "warning" },
   urgent: { label: "Urgent", level: "critical" },
+};
+
+export const productionPlanStatusMeta: Record<ProductionPlanStatus, StatusMeta> = {
+  draft: { label: "Draft", level: "neutral" },
+  under_review: { label: "Under Review", level: "warning" },
+  approved: { label: "Approved", level: "info" },
+  in_progress: { label: "In Progress", level: "info" },
+  completed: { label: "Completed", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const productionOrderStatusMeta: Record<ProductionOrderStatus, StatusMeta> = {
+  draft: { label: "Draft", level: "neutral" },
+  planned: { label: "Planned", level: "info" },
+  released: { label: "Released", level: "info" },
+  in_progress: { label: "In Progress", level: "info" },
+  on_hold: { label: "On Hold", level: "warning" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
 };
 
 export const stockLevelMeta: Record<StockLevel, StatusMeta> = {

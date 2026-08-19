@@ -185,6 +185,112 @@ export interface ProductionLineSummary {
 }
 
 // ---------------------------------------------------------------------------
+// Production Planning (Phase 6)
+// ---------------------------------------------------------------------------
+
+export type ProductionPlanStatus =
+  | "draft"
+  | "under_review"
+  | "approved"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+/** A planning period grouping one or more Production Orders — not itself a manufacturing instruction. */
+export interface ProductionPlan {
+  id: string;
+  planNumber: string;
+  periodStart: string;
+  periodEnd: string;
+  planner: string;
+  status: ProductionPlanStatus;
+  notes?: string;
+  createdDate: string;
+}
+
+export type ProductionOrderStatus =
+  | "draft"
+  | "planned"
+  | "released"
+  | "in_progress"
+  | "on_hold"
+  | "partially_completed"
+  | "completed"
+  | "cancelled";
+
+/**
+ * "What the factory has decided to manufacture" — distinct from a customer Order
+ * ("what the customer wants"). Always traces back to one Order line item; multiple
+ * Production Orders may split a single line item's quantity across batches/lines
+ * (partial production / splitting are the same mechanism here).
+ */
+export interface ProductionOrder {
+  id: string;
+  productionOrderNumber: string;
+  planId?: string;
+  orderId: string;
+  orderNumber: string;
+  orderLineItemId: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  quantity: number;
+  unit: string;
+  priority: OrderPriority;
+  plannedStart: string;
+  plannedEnd: string;
+  productionLineId?: string;
+  supervisor?: string;
+  status: ProductionOrderStatus;
+  /** Visualization only — Phase 7+ populates real execution data. */
+  currentStage: ProductionStageKey;
+  quantityProduced: number;
+  notes?: string;
+}
+
+export interface BomItem {
+  id: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  /** Base quantity consumed per finished piece, before wastage. */
+  quantityPerPiece: number;
+  unit: string;
+  /** Configurable wastage allowance as a percentage, e.g. 5 = 5%. */
+  wastagePercent: number;
+}
+
+/** One Bill of Materials per Style — the foundational, non-versioned BOM concept for Phase 6. */
+export interface Bom {
+  id: string;
+  styleId: string;
+  styleCode: string;
+  status: MasterStatus;
+  items: BomItem[];
+}
+
+/** A soft hold against InventoryBalance.reserved, created when a Production Order is released. */
+export interface MaterialReservation {
+  id: string;
+  productionOrderId: string;
+  materialId: string;
+  quantity: number;
+  createdDate: string;
+}
+
+export interface ProductionActivityEntry {
+  id: string;
+  productionOrderId: string;
+  actor: string;
+  action: string;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
 // Inventory & Materials
 // ---------------------------------------------------------------------------
 
