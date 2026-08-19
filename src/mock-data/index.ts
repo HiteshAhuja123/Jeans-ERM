@@ -5,6 +5,7 @@ export * from "./order-activity";
 export * from "./production";
 export * from "./inventory";
 export * from "./purchasing";
+export * from "./goods-receipts";
 export * from "./quality";
 export * from "./dispatch";
 export * from "./alerts";

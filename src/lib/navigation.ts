@@ -18,7 +18,7 @@ export interface NavItem {
   icon: LucideIcon;
   description: string;
   /** Shown as a small tag on the sidebar item, e.g. an open-item count. */
-  badgeKey?: "delayedOrders" | "lowStock" | "openDefects" | "pendingApprovals";
+  badgeKey?: "delayedOrders" | "lowStock" | "openDefects" | "pendingApprovals" | "openPurchaseOrders";
 }
 
 export interface NavGroup {
@@ -81,6 +81,7 @@ export const navGroups: NavGroup[] = [
         href: "/purchasing",
         icon: ShoppingCart,
         description: "Requests, purchase orders & suppliers",
+        badgeKey: "openPurchaseOrders",
       },
     ],
   },

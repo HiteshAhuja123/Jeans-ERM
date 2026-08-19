@@ -190,34 +190,64 @@ export interface ProductionLineSummary {
 
 export type MaterialCategory = "fabric" | "accessory" | "raw_material" | "finished_good";
 
+/** Derived from Available vs. Reorder Point — never stored, always computed. See `lib/inventory-utils.ts`. */
 export type StockLevel = "healthy" | "low" | "critical" | "out_of_stock";
 
-export interface InventoryItem {
+export interface InventoryLocationStock {
+  warehouseId: string;
+  locationId: string;
+  quantity: number;
+}
+
+/**
+ * A material's current stock position — one record per Material, referenced by id
+ * rather than duplicating Material fields. `onHand`/`reserved`/`onOrder` are the only
+ * stored quantities; `available` and `stockLevel` are always derived (see inventory-utils).
+ */
+export interface InventoryBalance {
+  /** Same value as `materialId` — one balance per material. */
   id: string;
-  sku: string;
-  name: string;
-  category: MaterialCategory;
-  unit: string;
-  quantityInStock: number;
-  reorderLevel: number;
-  stockLevel: StockLevel;
-  warehouseLocation: string;
+  materialId: string;
+  /** Physically present, usable stock. Excludes rejected/quarantined material by construction. */
+  onHand: number;
+  /** Held back for confirmed needs (e.g. production allocation) — set by mock data in this phase, not interactively adjustable yet. */
+  reserved: number;
+  /** Received but rejected on inspection — tracked for visibility, never added to `onHand`. */
+  rejected: number;
+  reorderPoint: number;
+  minimumStock: number;
+  locations: InventoryLocationStock[];
   lastMovementDate: string;
+  /** Estimated unit cost for operational stock valuation — not an accounting valuation method. */
   unitCost: number;
 }
 
-export type StockMovementType = "receipt" | "issue" | "adjustment" | "transfer";
+export type StockMovementType =
+  | "receipt"
+  | "issue"
+  | "transfer"
+  | "adjustment"
+  | "return"
+  | "damage"
+  | "rejection";
 
 export interface StockMovement {
   id: string;
-  itemId: string;
-  itemName: string;
+  materialId: string;
+  materialName: string;
   type: StockMovementType;
+  /** Signed delta — positive increases on-hand stock, negative decreases it. */
   quantity: number;
   unit: string;
-  reference: string;
-  date: string;
+  fromWarehouseId?: string;
+  fromLocationId?: string;
+  toWarehouseId?: string;
+  toLocationId?: string;
+  /** e.g. a GRN number, PO number or adjustment reference. */
+  reference?: string;
+  reason?: string;
   performedBy: string;
+  timestamp: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -251,32 +281,104 @@ export interface Supplier {
   onTimeDeliveryRate: number;
 }
 
-export type PurchaseOrderStatus = "draft" | "sent" | "partially_received" | "received" | "cancelled";
+export type PurchaseOrderStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "sent"
+  | "partially_received"
+  | "received"
+  | "cancelled";
+
+export interface PurchaseOrderItem {
+  id: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  /** Sum of accepted quantities across all Goods Receipts against this line — derived, never user-edited. */
+  receivedQuantity: number;
+}
 
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
   supplierId: string;
   supplierName: string;
-  itemSummary: string;
-  totalValue: number;
-  status: PurchaseOrderStatus;
   orderDate: string;
   expectedDate: string;
+  status: PurchaseOrderStatus;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discount: number;
+  tax: number;
+  totalValue: number;
+  notes?: string;
 }
 
-export type PurchaseRequestStatus = "pending_approval" | "approved" | "rejected" | "converted";
+export type PurchaseRequestStatus =
+  | "draft"
+  | "submitted"
+  | "pending_approval"
+  | "approved"
+  | "rejected"
+  | "converted"
+  | "cancelled";
+
+export type PurchaseRequestPriority = "low" | "normal" | "high" | "urgent";
 
 export interface PurchaseRequest {
   id: string;
   requestNumber: string;
   requestedBy: string;
-  itemSummary: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
   quantity: number;
   unit: string;
-  neededBy: string;
+  requiredDate: string;
+  requestDate: string;
+  preferredSupplierId?: string;
+  priority: PurchaseRequestPriority;
+  reason: string;
+  notes?: string;
+  /** Optional link to the customer Order that drove this requirement. */
+  referenceOrderId?: string;
   status: PurchaseRequestStatus;
-  urgency: "low" | "normal" | "high";
+  /** Set once this request has been converted to a Purchase Order. */
+  convertedToPoId?: string;
+}
+
+export type ReceivingItemStatus = "pending_inspection" | "accepted" | "rejected" | "partially_accepted";
+
+export interface GoodsReceiptItem {
+  id: string;
+  poItemId: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  receivedQuantity: number;
+  acceptedQuantity: number;
+  rejectedQuantity: number;
+  unit: string;
+  inspectionStatus: ReceivingItemStatus;
+  warehouseId: string;
+  locationId: string;
+}
+
+export interface GoodsReceipt {
+  id: string;
+  grnNumber: string;
+  poId: string;
+  poNumber: string;
+  supplierId: string;
+  supplierName: string;
+  receivedDate: string;
+  items: GoodsReceiptItem[];
+  receivedBy: string;
+  notes?: string;
 }
 
 // ---------------------------------------------------------------------------

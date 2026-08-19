@@ -1,10 +1,12 @@
+import { getStockStatus } from "@/lib/inventory-utils";
 import {
   mockAlerts,
   mockApprovals,
   mockDailyProduction,
   mockDefects,
-  mockInventoryItems,
+  mockInventoryBalances,
   mockOrders,
+  mockPurchaseOrders,
   mockQcInspections,
 } from "@/mock-data";
 
@@ -14,11 +16,15 @@ import {
  */
 export const navBadgeCounts = {
   delayedOrders: mockOrders.filter((order) => order.isDelayed).length,
-  lowStock: mockInventoryItems.filter(
-    (item) => item.stockLevel === "low" || item.stockLevel === "critical" || item.stockLevel === "out_of_stock",
-  ).length,
+  lowStock: mockInventoryBalances.filter((balance) => {
+    const level = getStockStatus(balance);
+    return level === "low" || level === "critical" || level === "out_of_stock";
+  }).length,
   openDefects: mockDefects.filter((defect) => defect.status === "open").length,
   pendingApprovals: mockApprovals.length,
+  openPurchaseOrders: mockPurchaseOrders.filter((po) =>
+    ["pending_approval", "approved", "sent", "partially_received"].includes(po.status),
+  ).length,
 };
 
 export const notificationCount = mockAlerts.length;

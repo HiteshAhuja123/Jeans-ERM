@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { PurchasingView } from "@/features/purchasing/purchasing-view";
+import { PurchasingHubView } from "@/features/purchasing/purchasing-hub-view";
 import { ListPageSkeleton } from "@/components/shared/list-page-skeleton";
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PurchasingPage() {
   return (
     <Suspense fallback={<ListPageSkeleton />}>
-      <PurchasingView />
+      <PurchasingHubView />
     </Suspense>
   );
 }

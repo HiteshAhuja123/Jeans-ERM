@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Star, PackageX } from "lucide-react";
+import { Star, PackageX, FileText } from "lucide-react";
 
 import { DetailHeader } from "@/components/shared/detail-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,7 +14,14 @@ import { activeStatusMeta, purchaseOrderStatusMeta } from "@/lib/status";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { supplierHooks } from "@/features/suppliers/service";
 import { SupplierFormSheet } from "@/features/suppliers/supplier-form-sheet";
-import { mockMaterials, mockPurchaseOrders } from "@/mock-data";
+import { mockGoodsReceipts, mockMaterials, mockPurchaseOrders } from "@/mock-data";
+import type { PurchaseOrder } from "@/types";
+
+function poItemSummary(po: PurchaseOrder): string {
+  if (po.items.length === 0) return "No items";
+  if (po.items.length === 1) return po.items[0].materialName;
+  return `${po.items[0].materialName} + ${po.items.length - 1} more`;
+}
 
 const typeLabels: Record<string, string> = {
   fabric: "Fabric",
@@ -33,6 +40,7 @@ export function SupplierDetailView({ id }: { id: string }) {
 
   const materials = useMemo(() => mockMaterials.filter((m) => m.supplierId === id), [id]);
   const purchaseOrders = useMemo(() => mockPurchaseOrders.filter((po) => po.supplierId === id), [id]);
+  const receipts = useMemo(() => mockGoodsReceipts.filter((grn) => grn.supplierId === id), [id]);
 
   if (isLoading) {
     return (
@@ -79,6 +87,8 @@ export function SupplierDetailView({ id }: { id: string }) {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="materials">Materials Supplied ({materials.length})</TabsTrigger>
               <TabsTrigger value="orders">Purchase Orders ({purchaseOrders.length})</TabsTrigger>
+              <TabsTrigger value="receipts">Receipts ({receipts.length})</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-4">
@@ -145,11 +155,15 @@ export function SupplierDetailView({ id }: { id: string }) {
                   {purchaseOrders.map((po) => {
                     const meta = purchaseOrderStatusMeta[po.status];
                     return (
-                      <Card key={po.id} className="flex items-center justify-between p-4">
+                      <Card
+                        key={po.id}
+                        className="flex cursor-pointer items-center justify-between p-4 hover:border-primary/40"
+                        onClick={() => router.push(`/purchasing/orders/${po.id}`)}
+                      >
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-foreground">{po.poNumber}</span>
                           <span className="text-xs text-muted-foreground">
-                            {po.itemSummary} · {formatCurrency(po.totalValue)} · Expected {formatDate(po.expectedDate)}
+                            {poItemSummary(po)} · {formatCurrency(po.totalValue)} · Expected {formatDate(po.expectedDate)}
                           </span>
                         </div>
                         <StatusBadge label={meta.label} level={meta.level} />
@@ -158,6 +172,37 @@ export function SupplierDetailView({ id }: { id: string }) {
                   })}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="receipts" className="mt-4">
+              {receipts.length === 0 ? (
+                <EmptyState icon={FileText} title="No receipts yet" description="Material received from this supplier will appear here." />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {receipts.map((grn) => (
+                    <Card
+                      key={grn.id}
+                      className="flex cursor-pointer items-center justify-between p-4 hover:border-primary/40"
+                      onClick={() => router.push(`/purchasing/orders/${grn.poId}`)}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-foreground">{grn.grnNumber}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Against {grn.poNumber} · Received {formatDate(grn.receivedDate)} · {grn.receivedBy}
+                        </span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="activity" className="mt-4">
+              <EmptyState
+                icon={FileText}
+                title="Activity coming soon"
+                description="A timeline of changes for this supplier will appear here in a later phase."
+              />
             </TabsContent>
           </Tabs>
         }

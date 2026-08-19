@@ -8,10 +8,13 @@ import type {
   OrderStatus,
   ProductionStageStatus,
   PurchaseOrderStatus,
+  PurchaseRequestPriority,
   PurchaseRequestStatus,
+  ReceivingItemStatus,
   StatusLevel,
   StatusMeta,
   StockLevel,
+  StockMovementType,
 } from "@/types";
 
 export const orderStatusMeta: Record<OrderStatus, StatusMeta> = {
@@ -47,6 +50,8 @@ export const productionStageStatusMeta: Record<ProductionStageStatus, StatusMeta
 
 export const purchaseOrderStatusMeta: Record<PurchaseOrderStatus, StatusMeta> = {
   draft: { label: "Draft", level: "neutral" },
+  pending_approval: { label: "Pending Approval", level: "warning" },
+  approved: { label: "Approved", level: "info" },
   sent: { label: "Sent", level: "info" },
   partially_received: { label: "Partially Received", level: "warning" },
   received: { label: "Received", level: "success" },
@@ -54,10 +59,37 @@ export const purchaseOrderStatusMeta: Record<PurchaseOrderStatus, StatusMeta> = 
 };
 
 export const purchaseRequestStatusMeta: Record<PurchaseRequestStatus, StatusMeta> = {
+  draft: { label: "Draft", level: "neutral" },
+  submitted: { label: "Submitted", level: "info" },
   pending_approval: { label: "Pending Approval", level: "warning" },
   approved: { label: "Approved", level: "success" },
   rejected: { label: "Rejected", level: "critical" },
   converted: { label: "Converted to PO", level: "info" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const purchaseRequestPriorityMeta: Record<PurchaseRequestPriority, StatusMeta> = {
+  low: { label: "Low", level: "neutral" },
+  normal: { label: "Normal", level: "info" },
+  high: { label: "High", level: "warning" },
+  urgent: { label: "Urgent", level: "critical" },
+};
+
+export const stockMovementTypeMeta: Record<StockMovementType, StatusMeta> = {
+  receipt: { label: "Receipt", level: "success" },
+  issue: { label: "Issue", level: "info" },
+  transfer: { label: "Transfer", level: "info" },
+  adjustment: { label: "Adjustment", level: "warning" },
+  return: { label: "Return", level: "info" },
+  damage: { label: "Damage", level: "critical" },
+  rejection: { label: "Rejection", level: "critical" },
+};
+
+export const receivingItemStatusMeta: Record<ReceivingItemStatus, StatusMeta> = {
+  pending_inspection: { label: "Pending Inspection", level: "warning" },
+  accepted: { label: "Accepted", level: "success" },
+  rejected: { label: "Rejected", level: "critical" },
+  partially_accepted: { label: "Partially Accepted", level: "warning" },
 };
 
 export const defectSeverityMeta: Record<DefectSeverity, StatusMeta> = {

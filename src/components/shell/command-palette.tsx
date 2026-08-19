@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Package, PackageSearch, Search } from "lucide-react";
+import { Building2, Package, PackageSearch, Search, ShoppingCart } from "lucide-react";
 
 import {
   CommandDialog,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/command";
 import { Kbd } from "@/components/ui/kbd";
 import { allNavItems } from "@/lib/navigation";
-import { mockCustomers, mockInventoryItems, mockOrders } from "@/mock-data";
+import { mockCustomers, mockMaterials, mockOrders, mockPurchaseOrders, mockSuppliers } from "@/mock-data";
 
 interface PaletteResult {
   id: string;
@@ -52,13 +52,33 @@ const customerResults: PaletteResult[] = mockCustomers.map((customer) => ({
   icon: Building2,
 }));
 
-const inventoryResults: PaletteResult[] = mockInventoryItems.map((item) => ({
-  id: `inventory-${item.id}`,
-  group: "Inventory",
-  label: item.name,
-  description: `${item.sku} · ${item.warehouseLocation}`,
-  href: `/inventory?q=${encodeURIComponent(item.name)}`,
-  icon: PackageSearch,
+const inventoryResults: PaletteResult[] = mockMaterials
+  .filter((material) => material.status === "active")
+  .map((material) => ({
+    id: `inventory-${material.id}`,
+    group: "Inventory",
+    label: material.name,
+    description: material.code,
+    href: `/inventory/stock/${material.id}`,
+    icon: PackageSearch,
+  }));
+
+const supplierResults: PaletteResult[] = mockSuppliers.map((supplier) => ({
+  id: `supplier-${supplier.id}`,
+  group: "Suppliers",
+  label: supplier.name,
+  description: supplier.location,
+  href: `/masters/suppliers/${supplier.id}`,
+  icon: Building2,
+}));
+
+const purchaseOrderResults: PaletteResult[] = mockPurchaseOrders.map((po) => ({
+  id: `po-${po.id}`,
+  group: "Purchasing",
+  label: po.poNumber,
+  description: po.supplierName,
+  href: `/purchasing/orders/${po.id}`,
+  icon: ShoppingCart,
 }));
 
 const groupedResults: Array<{ group: string; items: PaletteResult[] }> = [
@@ -66,6 +86,8 @@ const groupedResults: Array<{ group: string; items: PaletteResult[] }> = [
   { group: "Orders", items: orderResults },
   { group: "Customers", items: customerResults },
   { group: "Inventory", items: inventoryResults },
+  { group: "Purchasing", items: purchaseOrderResults },
+  { group: "Suppliers", items: supplierResults },
 ];
 
 const CommandPaletteContext = createContext<{ open: () => void } | null>(null);
