@@ -1,5 +1,6 @@
 import { getAvailableFabric, getMaterialReadiness } from "@/lib/cutting-utils";
 import { getStockStatus } from "@/lib/inventory-utils";
+import { getPendingReworkQuantity, isSewingOrderDelayed } from "@/lib/sewing-utils";
 import {
   mockAlerts,
   mockApprovals,
@@ -11,6 +12,8 @@ import {
   mockProductionOrders,
   mockPurchaseOrders,
   mockQcInspections,
+  mockSewingOrders,
+  mockSewingReworks,
 } from "@/mock-data";
 
 const activeProductionStatuses = ["draft", "planned", "released", "in_progress", "on_hold", "partially_completed"];
@@ -43,6 +46,11 @@ export const navBadgeCounts = {
       return getMaterialReadiness(order.fabricRequired, getAvailableFabric(balance)) === "shortage";
     }
     return false;
+  }).length,
+  sewingAlerts: mockSewingOrders.filter((order) => {
+    if (order.status === "on_hold") return true;
+    if (isSewingOrderDelayed(order, todayDate)) return true;
+    return getPendingReworkQuantity(order.id, mockSewingReworks) > 0;
   }).length,
 };
 

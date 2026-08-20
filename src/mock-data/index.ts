@@ -32,3 +32,7 @@ export * from "./cutting-reasons";
 export * from "./cutting";
 export * from "./bundles";
 export * from "./cutting-activity";
+export * from "./sewing-operations";
+export * from "./sewing-reasons";
+export * from "./sewing";
+export * from "./sewing-activity";

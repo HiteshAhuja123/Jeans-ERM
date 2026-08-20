@@ -6,15 +6,18 @@ import { toast } from "sonner";
 
 import { DetailHeader } from "@/components/shared/detail-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/format";
-import { bundleStatusMeta } from "@/lib/status";
+import { bundleStatusMeta, sewingOrderStatusMeta } from "@/lib/status";
 import { bundleActionHooks, bundleHooks } from "@/features/cutting/bundle-service";
 import { BundleLabel } from "@/features/cutting/bundle-label";
 import { BundleStatusMenu } from "@/features/cutting/bundle-status-menu";
 import { cuttingOrderHooks } from "@/features/cutting/service";
+import { sewingOrderBundleHooks, sewingOrderHooks, sewingProductionEntryHooks } from "@/features/sewing/service";
+import { getBundleProcessedQuantity, getBundleRemainingQuantity } from "@/lib/sewing-utils";
 import { mockSkus } from "@/mock-data";
 import { currentUser } from "@/mock-data/users";
 import type { BundleStatus } from "@/types";
@@ -25,6 +28,9 @@ export function BundleDetailView({ id }: { id: string }) {
   const router = useRouter();
   const { data: bundle, isLoading } = bundleHooks.useDetail(id);
   const { data: cuttingOrder } = cuttingOrderHooks.useDetail(bundle?.cuttingOrderId);
+  const { data: sewingLinks = [] } = sewingOrderBundleHooks.useList();
+  const { data: sewingOrders = [] } = sewingOrderHooks.useList();
+  const { data: sewingEntries = [] } = sewingProductionEntryHooks.useList();
   const verifyMutation = bundleActionHooks.useVerify();
 
   if (isLoading) {
@@ -53,6 +59,10 @@ export function BundleDetailView({ id }: { id: string }) {
   const statusMeta = bundleStatusMeta[bundle.status];
   const sku = mockSkus.find((s) => s.id === bundle.skuId);
   const canVerify = verifiableStatuses.includes(bundle.status);
+  const sewingLink = sewingLinks.find((l) => l.bundleId === bundle.id);
+  const sewingOrder = sewingLink ? sewingOrders.find((o) => o.id === sewingLink.sewingOrderId) : undefined;
+  const sewingProcessed = getBundleProcessedQuantity(bundle.id, sewingEntries);
+  const sewingRemaining = getBundleRemainingQuantity(bundle, sewingEntries);
 
   async function handleVerify() {
     if (!bundle) return;
@@ -178,13 +188,30 @@ export function BundleDetailView({ id }: { id: string }) {
             </Card>
           )}
 
-          <Card className="flex flex-col gap-1 p-5">
+          <Card className="flex flex-col gap-2 p-5">
             <span className="text-sm font-semibold text-foreground">Sewing</span>
-            <p className="text-sm text-muted-foreground">
-              {bundle.status === "ready_for_sewing"
-                ? "Ready and waiting to be picked up by sewing. Sewing execution is introduced in Phase 8."
-                : "Not yet ready for sewing. Sewing execution is introduced in Phase 8."}
-            </p>
+            {!sewingOrder ? (
+              <p className="text-sm text-muted-foreground">
+                {bundle.status === "ready_for_sewing" ? "Ready and waiting to be assigned to a sewing order." : "Not yet ready for sewing."}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => router.push(`/sewing/orders/${sewingOrder.id}`)} className="text-sm font-medium text-primary hover:underline">
+                    {sewingOrder.sewingOrderNumber}
+                  </button>
+                  <StatusBadge label={sewingOrderStatusMeta[sewingOrder.status].label} level={sewingOrderStatusMeta[sewingOrder.status].level} />
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Processed</span>
+                  <span className="font-medium text-foreground">{sewingProcessed.toLocaleString()} / {bundle.quantity.toLocaleString()} pcs</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="font-medium text-foreground">{sewingRemaining.toLocaleString()} pcs</span>
+                </div>
+              </>
+            )}
           </Card>
         </div>
 

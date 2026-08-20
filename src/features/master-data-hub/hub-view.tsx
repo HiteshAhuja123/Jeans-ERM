@@ -29,6 +29,7 @@ import {
   mockProcesses,
   mockProductionLineMasters,
   mockProducts,
+  mockSewingOperations,
   mockSizes,
   mockSkus,
   mockStyles,
@@ -89,6 +90,7 @@ const groups: HubGroup[] = [
       { label: "Machines", description: "Machines by department & line", href: "/masters/machines", icon: Cog, count: mockMachines.length },
       { label: "Employees", description: "Operational staff master", href: "/masters/employees", icon: Users, count: mockEmployees.length },
       { label: "Processes", description: "Configurable operations", href: "/masters/processes", icon: ListOrdered, count: mockProcesses.length },
+      { label: "Sewing Operations", description: "Pocket, seam, hem & other sewing steps", href: "/masters/sewing-operations", icon: ListOrdered, count: mockSewingOperations.length },
     ],
   },
 ];

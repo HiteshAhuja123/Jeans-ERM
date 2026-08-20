@@ -18,6 +18,8 @@ import type {
   PurchaseRequestPriority,
   PurchaseRequestStatus,
   ReceivingItemStatus,
+  SewingOrderStatus,
+  SewingReworkStatus,
   StatusLevel,
   StatusMeta,
   StockLevel,
@@ -188,11 +190,32 @@ export const bundleStatusMeta: Record<BundleStatus, StatusMeta> = {
   created: { label: "Created", level: "neutral" },
   pending_verification: { label: "Pending Verification", level: "warning" },
   ready_for_sewing: { label: "Ready for Sewing", level: "success" },
+  assigned: { label: "Assigned", level: "info" },
   issued_to_sewing: { label: "Issued to Sewing", level: "info" },
   in_sewing: { label: "In Sewing", level: "info" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
   completed: { label: "Completed", level: "success" },
   on_hold: { label: "On Hold", level: "warning" },
   cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const sewingOrderStatusMeta: Record<SewingOrderStatus, StatusMeta> = {
+  planned: { label: "Planned", level: "neutral" },
+  assigned: { label: "Assigned", level: "info" },
+  ready: { label: "Ready", level: "info" },
+  in_progress: { label: "In Progress", level: "info" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
+  on_hold: { label: "On Hold", level: "warning" },
+  processing_complete: { label: "Processing Complete", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const sewingReworkStatusMeta: Record<SewingReworkStatus, StatusMeta> = {
+  pending: { label: "Pending", level: "warning" },
+  in_progress: { label: "In Progress", level: "info" },
+  completed: { label: "Completed", level: "success" },
+  rejected: { label: "Rejected", level: "critical" },
 };
 
 export const statusLevelClasses: Record<StatusLevel, string> = {

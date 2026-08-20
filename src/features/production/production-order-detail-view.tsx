@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
-import { cuttingOrderStatusMeta, defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta } from "@/lib/status";
+import { cuttingOrderStatusMeta, defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta, sewingOrderStatusMeta } from "@/lib/status";
 import {
   buildProductionStageProgress,
   getDeliveryRisk,
@@ -28,6 +28,7 @@ import {
   getCuttingOrderGoodOutput,
   getReadyForSewingQuantity,
 } from "@/lib/cutting-utils";
+import { getSewingOrderQuantitySummary } from "@/lib/sewing-utils";
 import { MaterialAvailabilityBadge, MaterialRequirementTable } from "@/features/production/material-requirement-table";
 import { useMaterialRequirements } from "@/features/production/use-material-requirements";
 import { ProductionOrderQuickEditSheet } from "@/features/production/production-order-quick-edit-sheet";
@@ -36,6 +37,7 @@ import { ReleaseProductionOrderButton } from "@/features/production/release-prod
 import { productionOrderHooks } from "@/features/production/service";
 import { bundleHooks } from "@/features/cutting/bundle-service";
 import { cuttingBatchHooks, cuttingOrderHooks, cuttingOutputHooks } from "@/features/cutting/service";
+import { sewingOrderHooks, sewingProductionEntryHooks, sewingReworkHooks } from "@/features/sewing/service";
 import { orderHooks } from "@/features/orders/service";
 import { productionLineHooks } from "@/features/production-lines/service";
 import { buildProductionOrderActivity } from "@/mock-data/production-activity";
@@ -50,6 +52,9 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
   const { data: cuttingBatches = [] } = cuttingBatchHooks.useList();
   const { data: cuttingOutputs = [] } = cuttingOutputHooks.useList();
   const { data: bundles = [] } = bundleHooks.useList();
+  const { data: sewingOrders = [] } = sewingOrderHooks.useList();
+  const { data: sewingEntries = [] } = sewingProductionEntryHooks.useList();
+  const { data: sewingReworks = [] } = sewingReworkHooks.useList();
   const [editOpen, setEditOpen] = useState(false);
 
   const { lines: materialLines } = useMaterialRequirements(po?.styleId, po?.quantity ?? 0);
@@ -97,6 +102,7 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
     ? cuttingBatches.filter((b) => b.cuttingOrderId === cuttingOrder.id).reduce((sum, b) => sum + getBundledQuantity(b.id, bundles), 0)
     : 0;
   const cuttingReadyForSewing = cuttingOrder ? getReadyForSewingQuantity(cuttingOrder.id, cuttingBatches, bundles) : 0;
+  const poSewingOrders = sewingOrders.filter((so) => so.productionOrderId === po.id);
   const canRelease = po.status === "draft" || po.status === "planned";
 
   return (
@@ -292,6 +298,43 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
                   <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/cutting/orders/${cuttingOrder.id}`)}>
                     View Cutting Order
                   </Button>
+                </Card>
+              )}
+              {poSewingOrders.length > 0 && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <span className="text-sm font-semibold text-foreground">Sewing</span>
+                  {poSewingOrders.map((so) => {
+                    const summary = getSewingOrderQuantitySummary(so, sewingEntries, sewingReworks);
+                    const meta = sewingOrderStatusMeta[so.status];
+                    return (
+                      <div key={so.id} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground">{so.sewingOrderNumber}</span>
+                          <StatusBadge label={meta.label} level={meta.level} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm">
+                          {[
+                            { label: "Assigned", value: so.quantity },
+                            { label: "Input", value: summary.input },
+                            { label: "Good", value: summary.goodOutput },
+                            { label: "Rework", value: summary.pendingRework },
+                            { label: "Rejected", value: summary.rejected },
+                          ].map((step, index, arr) => (
+                            <div key={step.label} className="flex items-center gap-2">
+                              <div className="flex flex-col items-center rounded-lg border border-border bg-card px-3 py-2">
+                                <span className="text-xs text-muted-foreground">{step.label}</span>
+                                <span className="text-sm font-semibold text-foreground tabular-nums">{step.value.toLocaleString()}</span>
+                              </div>
+                              {index < arr.length - 1 && <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/sewing/orders/${so.id}`)}>
+                          View Sewing Order
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </Card>
               )}
             </TabsContent>

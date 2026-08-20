@@ -680,15 +680,18 @@ export interface MaterialReturn {
 }
 
 /**
- * "In Sewing" / "Issued to Sewing" / "Completed" are future-state placeholders — Phase 7 never sets
- * them. The final meaningful state this phase produces is "Ready for Sewing".
+ * "Ready for Sewing" is the final meaningful state Phase 7 itself produces. "Assigned" /
+ * "Issued to Sewing" / "In Sewing" / "Partially Completed" / "Completed" (as a sewing outcome)
+ * are driven by Phase 8's sewing workflow — see `lib/sewing-utils.ts`.
  */
 export type BundleStatus =
   | "created"
   | "pending_verification"
   | "ready_for_sewing"
+  | "assigned"
   | "issued_to_sewing"
   | "in_sewing"
+  | "partially_completed"
   | "completed"
   | "on_hold"
   | "cancelled";
@@ -736,6 +739,140 @@ export interface ReasonCode {
   id: string;
   label: string;
   status: MasterStatus;
+}
+
+// ---------------------------------------------------------------------------
+// Sewing Production (Phase 8)
+// ---------------------------------------------------------------------------
+
+export type SewingOrderStatus =
+  | "planned"
+  | "assigned"
+  | "ready"
+  | "in_progress"
+  | "partially_completed"
+  | "on_hold"
+  | "processing_complete"
+  | "completed"
+  | "cancelled";
+
+/**
+ * "What needs to be sewn", built from one or more Bundles off a Production Order. Never assume
+ * 1 Production Order = 1 Sewing Order — a production order's bundles can be split across several
+ * Sewing Orders (by line, by date, by run). Always traces back to exactly one Production Order.
+ */
+export interface SewingOrder {
+  id: string;
+  sewingOrderNumber: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  skuId?: string;
+  /** Sum of assigned bundle quantities — the total this sewing order is responsible for. */
+  quantity: number;
+  unit: string;
+  priority: OrderPriority;
+  productionLineId?: string;
+  supervisor?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  status: SewingOrderStatus;
+  holdReason?: string;
+  createdDate: string;
+  notes?: string;
+}
+
+/** Links one Bundle to the Sewing Order it has been assigned to. A bundle belongs to at most one active sewing order. */
+export interface SewingOrderBundle {
+  id: string;
+  sewingOrderId: string;
+  bundleId: string;
+  bundleNumber: string;
+  quantity: number;
+  assignedDate: string;
+}
+
+/**
+ * One "record production" event against a bundle within a Sewing Order. Bundle and Sewing Order
+ * totals are always the sum of these entries — never edited directly. `inputQuantity` must equal
+ * `goodQuantity + rejectedQuantity + reworkQuantity` (enforced by the recording form/service).
+ */
+export interface SewingProductionEntry {
+  id: string;
+  sewingOrderId: string;
+  bundleId: string;
+  bundleNumber: string;
+  date: string;
+  inputQuantity: number;
+  goodQuantity: number;
+  rejectedQuantity: number;
+  reworkQuantity: number;
+  notes?: string;
+  recordedBy: string;
+  recordedDate: string;
+}
+
+/** Reason-level record behind a production entry's rejected + rework quantity — mirrors CuttingRejection. */
+export interface SewingDefect {
+  id: string;
+  sewingOrderId: string;
+  bundleId: string;
+  productionEntryId: string;
+  reasonId: string;
+  /** Rejected + Rework quantity for this entry, per the "Defect Quantity" rule — never double-counted. */
+  quantity: number;
+  notes?: string;
+  recordedBy: string;
+  date: string;
+}
+
+export type SewingReworkStatus = "pending" | "in_progress" | "completed" | "rejected";
+
+/** Tracks one batch of rework pieces through to a final good/rejected split. Basic — no multi-stage rework routing. */
+export interface SewingRework {
+  id: string;
+  reworkNumber: string;
+  sewingOrderId: string;
+  bundleId: string;
+  productionEntryId: string;
+  defectId?: string;
+  quantity: number;
+  reasonId: string;
+  status: SewingReworkStatus;
+  /** Set only once the rework is resolved — completedQuantity + rejectedQuantity always equals `quantity`. */
+  completedQuantity?: number;
+  rejectedQuantity?: number;
+  createdDate: string;
+  completedDate?: string;
+  recordedBy: string;
+}
+
+/** Configurable operation master — e.g. Pocket Attachment, Side Seam, Hem. Sequence is suggested, not an enforced workflow. */
+export interface SewingOperation {
+  id: string;
+  code: string;
+  name: string;
+  sequence: number;
+  status: MasterStatus;
+}
+
+/** Basic association of an Operation to a Production Line and, optionally, the Operator running it. */
+export interface SewingLineOperation {
+  id: string;
+  productionLineId: string;
+  operationId: string;
+  sequence: number;
+  operatorId?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Boxes, Building2, Package, PackageSearch, Search, ShoppingCart } from "lucide-react";
+import { Boxes, Building2, Package, PackageSearch, Search, Shirt, ShoppingCart } from "lucide-react";
 
 import {
   CommandDialog,
@@ -20,6 +20,7 @@ import {
   mockOrders,
   mockProductionOrders,
   mockPurchaseOrders,
+  mockSewingOrders,
   mockSuppliers,
 } from "@/mock-data";
 
@@ -97,10 +98,20 @@ const productionOrderResults: PaletteResult[] = mockProductionOrders.map((po) =>
   icon: Boxes,
 }));
 
+const sewingOrderResults: PaletteResult[] = mockSewingOrders.map((so) => ({
+  id: `sew-${so.id}`,
+  group: "Sewing",
+  label: so.sewingOrderNumber,
+  description: `${so.customerName} · ${so.styleCode} · ${so.quantity.toLocaleString()} pcs`,
+  href: `/sewing/orders/${so.id}`,
+  icon: Shirt,
+}));
+
 const groupedResults: Array<{ group: string; items: PaletteResult[] }> = [
   { group: "Pages", items: pageResults },
   { group: "Orders", items: orderResults },
   { group: "Production", items: productionOrderResults },
+  { group: "Sewing", items: sewingOrderResults },
   { group: "Customers", items: customerResults },
   { group: "Inventory", items: inventoryResults },
   { group: "Purchasing", items: purchaseOrderResults },

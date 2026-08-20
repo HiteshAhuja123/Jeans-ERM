@@ -9,6 +9,7 @@ import {
   Package,
   PackageSearch,
   Scissors,
+  Shirt,
   ShoppingCart,
   Ship,
   Settings,
@@ -29,7 +30,8 @@ export interface NavItem {
     | "pendingApprovals"
     | "openPurchaseOrders"
     | "productionAlerts"
-    | "cuttingAlerts";
+    | "cuttingAlerts"
+    | "sewingAlerts";
 }
 
 export interface NavGroup {
@@ -106,6 +108,30 @@ export const navGroups: NavGroup[] = [
         href: "/cutting/bundles",
         icon: Layers,
         description: "Bundle traceability & ready-for-sewing status",
+      },
+    ],
+  },
+  {
+    label: "Sewing",
+    items: [
+      {
+        label: "Sewing",
+        href: "/sewing",
+        icon: Shirt,
+        description: "Sewing dashboard, work queue & production",
+        badgeKey: "sewingAlerts",
+      },
+      {
+        label: "Sewing Orders",
+        href: "/sewing/orders",
+        icon: ClipboardList,
+        description: "Sewing orders, bundle & line assignment",
+      },
+      {
+        label: "Sewing Schedule",
+        href: "/sewing/schedule",
+        icon: CalendarDays,
+        description: "Sewing line schedule & calendar",
       },
     ],
   },

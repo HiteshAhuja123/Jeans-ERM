@@ -10,4 +10,8 @@ export const mockEmployees: Employee[] = [
   { id: "emp-007", code: "EMP-007", name: "Anjali Mehta", departmentId: "dept-006", designation: "Store Manager", phone: "+91 98220 22334", email: "anjali.mehta@ermjeans.in", status: "active" },
   { id: "emp-008", code: "EMP-008", name: "Rakesh Verma", departmentId: "dept-007", designation: "Purchase Executive", phone: "+91 98220 44556", email: "rakesh.verma@ermjeans.in", status: "active" },
   { id: "emp-009", code: "EMP-009", name: "Sunita Rao", departmentId: "dept-005", designation: "QC Inspector", phone: "+91 98220 66778", email: "sunita.rao@ermjeans.in", status: "inactive" },
+  { id: "emp-010", code: "EMP-010", name: "Sanjay Gupta", departmentId: "dept-002", designation: "Sewing Operator", phone: "+91 98220 12121", email: "sanjay.gupta@ermjeans.in", status: "active" },
+  { id: "emp-011", code: "EMP-011", name: "Pooja Nair", departmentId: "dept-002", designation: "Sewing Operator", phone: "+91 98220 23232", email: "pooja.nair@ermjeans.in", status: "active" },
+  { id: "emp-012", code: "EMP-012", name: "Vikas Singh", departmentId: "dept-002", designation: "Sewing Operator", phone: "+91 98220 34343", email: "vikas.singh@ermjeans.in", status: "active" },
+  { id: "emp-013", code: "EMP-013", name: "Farida Sheikh", departmentId: "dept-002", designation: "Sewing Operator", phone: "+91 98220 45454", email: "farida.sheikh@ermjeans.in", status: "active" },
 ];

@@ -59,7 +59,7 @@ function makeBundles(
   });
 }
 
-export const mockBundles: Bundle[] = [
+const rawBundles: Bundle[] = [
   // cut-127 / cb-127-1 (good 960 across 6 sizes) — bundled at 50/pc for sizes 32 & 34, rest still pending bundling.
   ...makeBundles("cb-127-1", "size-003", "32", 50, ["ready_for_sewing", "ready_for_sewing", "ready_for_sewing", "pending_verification"], "2026-08-07", "Deepak Patil"),
   ...makeBundles("cb-127-1", "size-004", "34", 50, ["ready_for_sewing", "ready_for_sewing", "pending_verification", "created"], "2026-08-07", "Deepak Patil"),
@@ -80,3 +80,31 @@ export const mockBundles: Bundle[] = [
   ...makeBundles("cb-125-1", "size-003", "32", 50, [...Array(9).fill("completed"), "ready_for_sewing", "ready_for_sewing"] as BundleStatus[], "2026-08-13", "Deepak Patil"),
   ...makeBundles("cb-125-1", "size-004", "34", 50, Array(11).fill("completed") as BundleStatus[], "2026-08-13", "Deepak Patil"),
 ];
+
+/**
+ * Phase 8 overrides — bundles that have moved past "Ready for Sewing" through the sewing
+ * workflow (assigned to a line, mid-sewing, or fully sewn) get their status advanced here rather
+ * than in the Phase 7 generator above. See mock-data/sewing.ts for the Sewing Orders that drive
+ * these transitions.
+ */
+const bundleStatusOverrides: Partial<Record<string, BundleStatus>> = {
+  // SEW-2026-00103 (prod-125, partially completed) — 20 of 22 bundles fully sewn, 2 still assigned and waiting.
+  "bnd-872": "assigned",
+  "bnd-873": "assigned",
+  // SEW-2026-00104 (prod-127, in progress) — one bundle fully sewn, one partially sewn, two assigned but not started.
+  "bnd-821": "completed",
+  "bnd-822": "in_sewing",
+  "bnd-823": "assigned",
+  "bnd-825": "assigned",
+  // SEW-2026-00105 (prod-128, assigned, not yet started).
+  "bnd-829": "assigned",
+  "bnd-830": "assigned",
+  "bnd-831": "assigned",
+  "bnd-832": "assigned",
+  "bnd-833": "assigned",
+};
+
+export const mockBundles: Bundle[] = rawBundles.map((bundle) => {
+  const override = bundleStatusOverrides[bundle.id];
+  return override ? { ...bundle, status: override } : bundle;
+});

@@ -311,7 +311,11 @@ export function getNextCuttingBatchStatusOptions(status: CuttingBatchStatus): Cu
   }
 }
 
-/** "Ready for Sewing" is reached only through the dedicated Verify action, not this generic menu. */
+/**
+ * "Ready for Sewing" is reached only through the dedicated Verify action, not this generic menu.
+ * "Assigned" / "Issued to Sewing" / "In Sewing" / "Partially Completed" are driven entirely by the
+ * Phase 8 sewing workflow (assignment, start, production entries) — not this menu either.
+ */
 export function getNextBundleStatusOptions(status: BundleStatus): BundleStatus[] {
   switch (status) {
     case "created":
@@ -319,6 +323,9 @@ export function getNextBundleStatusOptions(status: BundleStatus): BundleStatus[]
     case "pending_verification":
       return ["on_hold", "cancelled"];
     case "ready_for_sewing":
+      return ["on_hold", "cancelled"];
+    case "assigned":
+    case "partially_completed":
       return ["on_hold", "cancelled"];
     case "on_hold":
       return ["pending_verification", "cancelled"];
