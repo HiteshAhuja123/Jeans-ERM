@@ -6,6 +6,7 @@ import {
   Boxes,
   Building,
   Cog,
+  Droplets,
   ListOrdered,
   Palette,
   Ruler,
@@ -27,6 +28,7 @@ import {
   mockMachines,
   mockMaterials,
   mockProcesses,
+  mockProcessingTypes,
   mockProductionLineMasters,
   mockProducts,
   mockSewingOperations,
@@ -91,6 +93,7 @@ const groups: HubGroup[] = [
       { label: "Employees", description: "Operational staff master", href: "/masters/employees", icon: Users, count: mockEmployees.length },
       { label: "Processes", description: "Configurable operations", href: "/masters/processes", icon: ListOrdered, count: mockProcesses.length },
       { label: "Sewing Operations", description: "Pocket, seam, hem & other sewing steps", href: "/masters/sewing-operations", icon: ListOrdered, count: mockSewingOperations.length },
+      { label: "Processing Types", description: "Stone wash, enzyme wash & other washing steps", href: "/masters/processing-types", icon: Droplets, count: mockProcessingTypes.length },
     ],
   },
 ];

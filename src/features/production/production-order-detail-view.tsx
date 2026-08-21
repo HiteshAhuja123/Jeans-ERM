@@ -14,7 +14,16 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
-import { cuttingOrderStatusMeta, defectSeverityMeta, orderPriorityMeta, productionOrderStatusMeta, sewingOrderStatusMeta } from "@/lib/status";
+import {
+  cuttingOrderStatusMeta,
+  defectSeverityMeta,
+  finishingOrderStatusMeta,
+  orderPriorityMeta,
+  processingOrderStatusMeta,
+  productionOrderStatusMeta,
+  qcOrderStatusMeta,
+  sewingOrderStatusMeta,
+} from "@/lib/status";
 import {
   buildProductionStageProgress,
   getDeliveryRisk,
@@ -29,6 +38,7 @@ import {
   getReadyForSewingQuantity,
 } from "@/lib/cutting-utils";
 import { getSewingOrderQuantitySummary } from "@/lib/sewing-utils";
+import { getFinishingOrderQuantitySummary, getProcessingQuantitySummary, getQcQuantitySummary } from "@/lib/post-sewing-utils";
 import { MaterialAvailabilityBadge, MaterialRequirementTable } from "@/features/production/material-requirement-table";
 import { useMaterialRequirements } from "@/features/production/use-material-requirements";
 import { ProductionOrderQuickEditSheet } from "@/features/production/production-order-quick-edit-sheet";
@@ -38,6 +48,9 @@ import { productionOrderHooks } from "@/features/production/service";
 import { bundleHooks } from "@/features/cutting/bundle-service";
 import { cuttingBatchHooks, cuttingOrderHooks, cuttingOutputHooks } from "@/features/cutting/service";
 import { sewingOrderHooks, sewingProductionEntryHooks, sewingReworkHooks } from "@/features/sewing/service";
+import { processingOrderHooks, processingTransactionHooks } from "@/features/processing/service";
+import { finishingEntryHooks, finishingOrderHooks } from "@/features/finishing/service";
+import { qcInspectionEntryHooks, qcOrderHooks, qcReworkHooks } from "@/features/quality/service";
 import { orderHooks } from "@/features/orders/service";
 import { productionLineHooks } from "@/features/production-lines/service";
 import { buildProductionOrderActivity } from "@/mock-data/production-activity";
@@ -55,6 +68,13 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
   const { data: sewingOrders = [] } = sewingOrderHooks.useList();
   const { data: sewingEntries = [] } = sewingProductionEntryHooks.useList();
   const { data: sewingReworks = [] } = sewingReworkHooks.useList();
+  const { data: processingOrders = [] } = processingOrderHooks.useList();
+  const { data: processingTransactions = [] } = processingTransactionHooks.useList();
+  const { data: finishingOrders = [] } = finishingOrderHooks.useList();
+  const { data: finishingEntries = [] } = finishingEntryHooks.useList();
+  const { data: qcOrders = [] } = qcOrderHooks.useList();
+  const { data: qcEntries = [] } = qcInspectionEntryHooks.useList();
+  const { data: qcReworks = [] } = qcReworkHooks.useList();
   const [editOpen, setEditOpen] = useState(false);
 
   const { lines: materialLines } = useMaterialRequirements(po?.styleId, po?.quantity ?? 0);
@@ -103,6 +123,9 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
     : 0;
   const cuttingReadyForSewing = cuttingOrder ? getReadyForSewingQuantity(cuttingOrder.id, cuttingBatches, bundles) : 0;
   const poSewingOrders = sewingOrders.filter((so) => so.productionOrderId === po.id);
+  const poProcessingOrders = processingOrders.filter((p) => p.productionOrderId === po.id);
+  const poFinishingOrders = finishingOrders.filter((f) => f.productionOrderId === po.id);
+  const poQcOrders = qcOrders.filter((q) => q.productionOrderId === po.id);
   const canRelease = po.status === "draft" || po.status === "planned";
 
   return (
@@ -336,6 +359,119 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
                     );
                   })}
                 </Card>
+              )}
+              {poProcessingOrders.length > 0 && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <span className="text-sm font-semibold text-foreground">Processing</span>
+                  {poProcessingOrders.map((proc) => {
+                    const summary = getProcessingQuantitySummary(proc, processingTransactions);
+                    const meta = processingOrderStatusMeta[proc.status];
+                    return (
+                      <div key={proc.id} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground">{proc.processingOrderNumber} · {proc.processingTypeName}</span>
+                          <StatusBadge label={meta.label} level={meta.level} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm">
+                          {[
+                            { label: "Planned", value: summary.planned },
+                            { label: "Sent", value: summary.sent },
+                            { label: "Received", value: summary.received },
+                            { label: "Pending", value: summary.pending },
+                          ].map((step, index, arr) => (
+                            <div key={step.label} className="flex items-center gap-2">
+                              <div className="flex flex-col items-center rounded-lg border border-border bg-card px-3 py-2">
+                                <span className="text-xs text-muted-foreground">{step.label}</span>
+                                <span className="text-sm font-semibold text-foreground tabular-nums">{step.value.toLocaleString()}</span>
+                              </div>
+                              {index < arr.length - 1 && <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/processing/${proc.id}`)}>
+                          View Processing Order
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </Card>
+              )}
+              {poFinishingOrders.length > 0 && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <span className="text-sm font-semibold text-foreground">Finishing</span>
+                  {poFinishingOrders.map((fin) => {
+                    const summary = getFinishingOrderQuantitySummary(fin, finishingEntries);
+                    const meta = finishingOrderStatusMeta[fin.status];
+                    return (
+                      <div key={fin.id} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground">{fin.finishingOrderNumber}</span>
+                          <StatusBadge label={meta.label} level={meta.level} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm">
+                          {[
+                            { label: "Planned", value: summary.planned },
+                            { label: "Output", value: summary.output },
+                            { label: "Issues", value: summary.issue },
+                            { label: "Remaining", value: summary.remaining },
+                          ].map((step, index, arr) => (
+                            <div key={step.label} className="flex items-center gap-2">
+                              <div className="flex flex-col items-center rounded-lg border border-border bg-card px-3 py-2">
+                                <span className="text-xs text-muted-foreground">{step.label}</span>
+                                <span className="text-sm font-semibold text-foreground tabular-nums">{step.value.toLocaleString()}</span>
+                              </div>
+                              {index < arr.length - 1 && <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/finishing/${fin.id}`)}>
+                          View Finishing Order
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </Card>
+              )}
+              {poQcOrders.length > 0 && (
+                <Card className="flex flex-col gap-3 p-5">
+                  <span className="text-sm font-semibold text-foreground">Quality</span>
+                  {poQcOrders.map((qc) => {
+                    const summary = getQcQuantitySummary(qc, qcEntries, qcReworks);
+                    const meta = qcOrderStatusMeta[qc.status];
+                    return (
+                      <div key={qc.id} className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-foreground">{qc.qcOrderNumber}</span>
+                          <StatusBadge label={meta.label} level={meta.level} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-sm">
+                          {[
+                            { label: "Planned", value: summary.planned },
+                            { label: "Passed", value: summary.passed },
+                            { label: "Rework", value: summary.pendingRework },
+                            { label: "Rejected", value: summary.rejected },
+                          ].map((step, index, arr) => (
+                            <div key={step.label} className="flex items-center gap-2">
+                              <div className="flex flex-col items-center rounded-lg border border-border bg-card px-3 py-2">
+                                <span className="text-xs text-muted-foreground">{step.label}</span>
+                                <span className="text-sm font-semibold text-foreground tabular-nums">{step.value.toLocaleString()}</span>
+                              </div>
+                              {index < arr.length - 1 && <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+                            </div>
+                          ))}
+                        </div>
+                        <Button variant="outline" size="sm" className="w-fit" onClick={() => router.push(`/quality/${qc.id}`)}>
+                          View QC Order
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </Card>
+              )}
+              {po.currentStage === "packing" && poQcOrders.some((q) => q.status !== "cancelled") && poQcOrders.filter((q) => q.status !== "cancelled").every((q) => q.status === "approved") && (
+                <p className="rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success">
+                  All QC orders for this production order are approved — Ready for Packing (Phase 10).
+                </p>
               )}
             </TabsContent>
 

@@ -148,8 +148,8 @@ export const mockProductionOrders: ProductionOrder[] = [
     productionLineId: "pl-001",
     supervisor: "Deepak Patil",
     status: "in_progress",
-    currentStage: "washing",
-    quantityProduced: 2650,
+    currentStage: "qc",
+    quantityProduced: 680,
   },
   {
     id: "prod-122",
@@ -173,8 +173,8 @@ export const mockProductionOrders: ProductionOrder[] = [
     productionLineId: "pl-001",
     supervisor: "Deepak Patil",
     status: "in_progress",
-    currentStage: "washing",
-    quantityProduced: 1500,
+    currentStage: "qc",
+    quantityProduced: 480,
   },
   {
     id: "prod-123",

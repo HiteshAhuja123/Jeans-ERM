@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClipboardList,
   Database,
+  Droplets,
   Layers,
   LayoutDashboard,
   Package,
@@ -31,7 +32,10 @@ export interface NavItem {
     | "openPurchaseOrders"
     | "productionAlerts"
     | "cuttingAlerts"
-    | "sewingAlerts";
+    | "sewingAlerts"
+    | "processingAlerts"
+    | "finishingAlerts"
+    | "qcAlerts";
 }
 
 export interface NavGroup {
@@ -136,6 +140,25 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Post-Sewing",
+    items: [
+      {
+        label: "Processing",
+        href: "/processing",
+        icon: Droplets,
+        description: "Washing/processing — internal & outsourced batches",
+        badgeKey: "processingAlerts",
+      },
+      {
+        label: "Finishing",
+        href: "/finishing",
+        icon: Shirt,
+        description: "Pressing, trimming & final finishing",
+        badgeKey: "finishingAlerts",
+      },
+    ],
+  },
+  {
     label: "Inventory",
     items: [
       {
@@ -166,8 +189,8 @@ export const navGroups: NavGroup[] = [
         label: "Quality",
         href: "/quality",
         icon: ShieldCheck,
-        description: "Inspections, defects & rework",
-        badgeKey: "openDefects",
+        description: "Inspection, pass/fail, rework & approval",
+        badgeKey: "qcAlerts",
       },
     ],
   },

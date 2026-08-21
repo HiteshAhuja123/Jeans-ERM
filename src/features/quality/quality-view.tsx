@@ -1,302 +1,203 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { AlertOctagon, CheckCircle2, ClipboardCheck, SearchX, Wrench } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, CheckCircle2, ClipboardCheck, ShieldCheck, Wrench } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
-import { FilterBar } from "@/components/shared/filter-bar";
+import { MasterDataTable, type MasterDataColumn } from "@/components/shared/master-data-table";
+import { MasterDataCards } from "@/components/shared/master-data-cards";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDate, formatPercent } from "@/lib/format";
-import { defectSeverityMeta } from "@/lib/status";
-import { dashboardMetrics } from "@/lib/derived";
-import { mockDefects, mockQcInspections } from "@/mock-data";
-import { productionStageLabels } from "@/mock-data/production";
-import type { DefectRecord, DefectSeverity, QcInspection } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatPercent } from "@/lib/format";
+import { qcOrderStatusMeta } from "@/lib/status";
+import { getQcQuantitySummary } from "@/lib/post-sewing-utils";
+import { getAchievementPercent } from "@/lib/sewing-utils";
+import { qcInspectionEntryHooks, qcOrderHooks, qcReworkHooks } from "@/features/quality/service";
+import { StartQcButton } from "@/features/quality/start-qc-button";
+import { CreateQcOrderDialog } from "@/features/quality/create-qc-order-dialog";
+import type { QcOrder, QcOrderStatus } from "@/types";
 
-const defectStatusLabels: Record<string, string> = {
-  open: "Open",
-  in_rework: "In Rework",
-  resolved: "Resolved",
-  rejected: "Rejected",
-};
+type StatusFilter = QcOrderStatus | "all";
 
-const defectStatusLevels: Record<string, "success" | "warning" | "critical" | "neutral"> = {
-  open: "critical",
-  in_rework: "warning",
-  resolved: "success",
-  rejected: "neutral",
-};
-
-const severityFilters: Array<{ value: DefectSeverity | "all"; label: string }> = [
-  { value: "all", label: "All severities" },
-  { value: "minor", label: "Minor" },
-  { value: "major", label: "Major" },
-  { value: "critical", label: "Critical" },
-];
-
-function matchesInspection(inspection: QcInspection, query: string) {
-  if (!query) return true;
-  return `${inspection.orderNumber} ${inspection.styleCode}`.toLowerCase().includes(query.toLowerCase());
-}
-
-function matchesDefect(defect: DefectRecord, query: string) {
-  if (!query) return true;
-  return `${defect.orderNumber} ${defect.defectType}`.toLowerCase().includes(query.toLowerCase());
-}
+const queueStatuses: QcOrderStatus[] = ["planned", "in_progress", "partially_completed", "on_hold", "pending_approval"];
 
 export function QualityView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: orders = [], isLoading } = qcOrderHooks.useList();
+  const { data: entries = [] } = qcInspectionEntryHooks.useList();
+  const { data: reworks = [] } = qcReworkHooks.useList();
+
+  const [tab, setTab] = useState<"queue" | "all">("queue");
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [activeTab, setActiveTab] = useState<"inspections" | "defects">("inspections");
-  const [severity, setSeverity] = useState<DefectSeverity | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const inReworkCount = mockDefects.filter((d) => d.status === "in_rework").length;
-  const criticalCount = mockDefects.filter((d) => d.severity === "critical").length;
+  const metrics = useMemo(() => {
+    const active = orders.filter((o) => queueStatuses.includes(o.status));
+    const pendingApproval = orders.filter((o) => o.status === "pending_approval");
+    const relevant = orders.filter((o) => o.status !== "planned" && o.status !== "cancelled");
+    const totalPlanned = relevant.reduce((sum, o) => sum + o.quantity, 0);
+    const totalPassed = relevant.reduce((sum, o) => sum + getQcQuantitySummary(o, entries, reworks).passed, 0);
+    const overallPassRate = getAchievementPercent(totalPassed, totalPlanned);
+    const pendingRework = orders.reduce((sum, o) => sum + getQcQuantitySummary(o, entries, reworks).pendingRework, 0);
+    return { active, pendingApproval, overallPassRate, pendingRework };
+  }, [orders, entries, reworks]);
 
-  const filteredInspections = mockQcInspections.filter((i) => matchesInspection(i, search));
-  const filteredDefects = mockDefects.filter(
-    (d) => matchesDefect(d, search) && (severity === "all" || d.severity === severity),
-  );
+  const filteredAll = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return orders
+      .filter((o) =>
+        q
+          ? o.qcOrderNumber.toLowerCase().includes(q) ||
+            o.finishingOrderNumber.toLowerCase().includes(q) ||
+            o.customerName.toLowerCase().includes(q) ||
+            o.styleCode.toLowerCase().includes(q)
+          : true,
+      )
+      .filter((o) => statusFilter === "all" || o.status === statusFilter)
+      .sort((a, b) => b.createdDate.localeCompare(a.createdDate));
+  }, [orders, search, statusFilter]);
+
+  const columns: MasterDataColumn<QcOrder>[] = [
+    { key: "num", header: "QC Order", render: (o) => <span className="font-medium text-foreground">{o.qcOrderNumber}</span> },
+    { key: "finishing", header: "Finishing Order", render: (o) => o.finishingOrderNumber },
+    { key: "customer", header: "Customer", render: (o) => o.customerName },
+    { key: "style", header: "Style", render: (o) => `${o.styleCode} · ${o.colorName}` },
+    { key: "inspector", header: "Inspector", render: (o) => o.inspector ?? "—" },
+    { key: "qty", header: "Qty", align: "right", render: (o) => `${o.quantity.toLocaleString()} pcs` },
+    {
+      key: "status",
+      header: "Status",
+      render: (o) => {
+        const meta = qcOrderStatusMeta[o.status];
+        return <StatusBadge label={meta.label} level={meta.level} />;
+      },
+    },
+  ];
+
+  function renderCard(order: QcOrder) {
+    const meta = qcOrderStatusMeta[order.status];
+    const summary = getQcQuantitySummary(order, entries, reworks);
+    return (
+      <Card key={order.id} className="flex flex-col gap-2 p-4" role="button" tabIndex={0} onClick={() => router.push(`/quality/${order.id}`)}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-foreground">{order.qcOrderNumber}</span>
+            <span className="text-xs text-muted-foreground">{order.customerName}</span>
+          </div>
+          <StatusBadge label={meta.label} level={meta.level} />
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-foreground">{order.styleCode} · {order.colorName}</span>
+          <span className="font-medium text-foreground">{order.quantity.toLocaleString()} pcs</span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{order.inspector ?? "Unassigned"}</span>
+          <span>Passed {summary.passed.toLocaleString()} / {order.quantity.toLocaleString()}</span>
+        </div>
+        {summary.pendingRework > 0 && <span className="text-xs text-warning">{summary.pendingRework.toLocaleString()} pcs pending rework</span>}
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Card className="p-5">
+          <Skeleton className="h-32 w-full" />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Quality" description="Inspections, defects, rework and rejections" />
+      <PageHeader
+        title="Quality"
+        description="Inspection, pass/fail, rework and approval — the QC workflow after Finishing"
+        actions={<Button onClick={() => setCreateOpen(true)}>Create QC Order</Button>}
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Overall Pass Rate"
-          value={formatPercent(dashboardMetrics.qcPassRate)}
-          icon={CheckCircle2}
-          accent={dashboardMetrics.qcPassRate >= 95 ? "success" : "warning"}
-        />
-        <StatCard
-          label="Open Defects"
-          value={dashboardMetrics.openQcIssues.toString()}
-          icon={AlertOctagon}
-          accent={dashboardMetrics.openQcIssues > 0 ? "critical" : "success"}
-        />
-        <StatCard label="In Rework" value={inReworkCount.toString()} icon={Wrench} accent="warning" />
-        <StatCard
-          label="Critical Defects"
-          value={criticalCount.toString()}
-          icon={ClipboardCheck}
-          accent={criticalCount > 0 ? "critical" : "success"}
-        />
+        <StatCard label="Overall Pass Rate" value={formatPercent(metrics.overallPassRate)} icon={CheckCircle2} accent={metrics.overallPassRate >= 95 ? "success" : "warning"} />
+        <StatCard label="Active QC Orders" value={metrics.active.length.toString()} icon={ShieldCheck} accent="info" />
+        <StatCard label="Pending Approval" value={metrics.pendingApproval.length.toString()} icon={ClipboardCheck} accent={metrics.pendingApproval.length > 0 ? "warning" : "success"} />
+        <StatCard label="Pending Rework" value={`${metrics.pendingRework.toLocaleString()} pcs`} icon={Wrench} accent={metrics.pendingRework > 0 ? "warning" : "success"} />
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "inspections" | "defects")}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "queue" | "all")}>
         <TabsList>
-          <TabsTrigger value="inspections">Inspections</TabsTrigger>
-          <TabsTrigger value="defects">Defects &amp; Rework</TabsTrigger>
+          <TabsTrigger value="queue">Work Queue</TabsTrigger>
+          <TabsTrigger value="all">All QC Orders</TabsTrigger>
         </TabsList>
 
-        <FilterBar
-          searchValue={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search by order # or style…"
-          className="mt-4"
-        >
-          {activeTab === "defects" && (
-            <Select value={severity} onValueChange={(v) => setSeverity(v as DefectSeverity | "all")}>
-              <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="Severity" />
+        <TabsContent value="queue" className="mt-4 flex flex-col gap-3">
+          {metrics.active.length === 0 ? (
+            <EmptyState icon={AlertTriangle} title="Nothing waiting on QC" description="Every QC order is either approved or cancelled." />
+          ) : (
+            metrics.active.map((order) => (
+              <Card key={order.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" className="text-sm font-semibold text-foreground hover:underline" onClick={() => router.push(`/quality/${order.id}`)}>
+                      {order.qcOrderNumber}
+                    </button>
+                    <StatusBadge label={qcOrderStatusMeta[order.status].label} level={qcOrderStatusMeta[order.status].level} />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {order.finishingOrderNumber} · {order.customerName} · {order.styleCode} · {order.colorName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{order.quantity.toLocaleString()} pcs · {order.inspector ?? "Unassigned"}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <StartQcButton qcOrder={order} />
+                  <Button variant="outline" onClick={() => router.push(`/quality/${order.id}`)}>
+                    View
+                  </Button>
+                </div>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="all" className="mt-4 flex flex-col gap-4">
+          <FilterBar searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search QC order, finishing order, customer or style…">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                {severityFilters.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                <SelectItem value="all">All statuses</SelectItem>
+                {Object.entries(qcOrderStatusMeta).map(([value, meta]) => (
+                  <SelectItem key={value} value={value}>
+                    {meta.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
-        </FilterBar>
+          </FilterBar>
 
-        <TabsContent value="inspections" className="mt-4">
-          {filteredInspections.length === 0 ? (
-            <EmptyState
-              icon={SearchX}
-              title="No inspections match your search"
-              description="Try a different order number or style code."
-            />
+          {filteredAll.length === 0 ? (
+            <EmptyState icon={ShieldCheck} title="No QC orders match your filters" description="Try a different search term or status." />
           ) : (
             <>
-              <Card className="hidden overflow-hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead className="text-right">Inspected</TableHead>
-                      <TableHead className="text-right">Passed</TableHead>
-                      <TableHead className="text-right">Failed</TableHead>
-                      <TableHead className="text-right">Pass Rate</TableHead>
-                      <TableHead>Inspector</TableHead>
-                      <TableHead className="text-right">Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredInspections.map((inspection) => (
-                      <TableRow key={inspection.id}>
-                        <TableCell className="font-medium text-foreground">
-                          {inspection.orderNumber}
-                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                            {inspection.styleCode}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {productionStageLabels[inspection.stage]}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-foreground">
-                          {inspection.inspectedQty.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-success">
-                          {inspection.passedQty.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-critical">
-                          {inspection.failedQty.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums text-foreground">
-                          {formatPercent(inspection.passRate)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{inspection.inspector}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {formatDate(inspection.date)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-              <div className="flex flex-col gap-3 md:hidden">
-                {filteredInspections.map((inspection) => (
-                  <Card key={inspection.id} className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-foreground">
-                          {inspection.orderNumber}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {inspection.styleCode} · {productionStageLabels[inspection.stage]}
-                        </span>
-                      </div>
-                      <span className="text-sm font-semibold text-foreground">
-                        {formatPercent(inspection.passRate)}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        <span className="text-success">{inspection.passedQty}</span> passed ·{" "}
-                        <span className="text-critical">{inspection.failedQty}</span> failed
-                      </span>
-                      <span>{formatDate(inspection.date)}</span>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="defects" className="mt-4">
-          {filteredDefects.length === 0 ? (
-            <EmptyState
-              icon={SearchX}
-              title="No defects match your filters"
-              description="Try a different search term or severity."
-            />
-          ) : (
-            <>
-              <Card className="hidden overflow-hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Defect</TableHead>
-                      <TableHead>Severity</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Reported</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDefects.map((defect) => {
-                      const severityMeta = defectSeverityMeta[defect.severity];
-                      return (
-                        <TableRow key={defect.id}>
-                          <TableCell className="font-medium text-foreground">
-                            {defect.orderNumber}
-                          </TableCell>
-                          <TableCell className="text-foreground">{defect.defectType}</TableCell>
-                          <TableCell>
-                            <StatusBadge label={severityMeta.label} level={severityMeta.level} hideIcon />
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-foreground">
-                            {defect.quantity}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {productionStageLabels[defect.stage]}
-                          </TableCell>
-                          <TableCell>
-                            <StatusBadge
-                              label={defectStatusLabels[defect.status]}
-                              level={defectStatusLevels[defect.status]}
-                            />
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatDate(defect.reportedDate)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </Card>
-              <div className="flex flex-col gap-3 md:hidden">
-                {filteredDefects.map((defect) => {
-                  const severityMeta = defectSeverityMeta[defect.severity];
-                  return (
-                    <Card key={defect.id} className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-foreground">
-                            {defect.orderNumber}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{defect.defectType}</span>
-                        </div>
-                        <StatusBadge
-                          label={defectStatusLabels[defect.status]}
-                          level={defectStatusLevels[defect.status]}
-                        />
-                      </div>
-                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                        <StatusBadge label={severityMeta.label} level={severityMeta.level} hideIcon />
-                        <span>
-                          {defect.quantity} pcs · {formatDate(defect.reportedDate)}
-                        </span>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+              <MasterDataTable columns={columns} rows={filteredAll} onRowClick={(o) => router.push(`/quality/${o.id}`)} />
+              <MasterDataCards rows={filteredAll} renderCard={(o) => renderCard(o)} />
             </>
           )}
         </TabsContent>
       </Tabs>
+
+      <CreateQcOrderDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }

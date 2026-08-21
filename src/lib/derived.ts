@@ -1,17 +1,22 @@
 import { getAvailableFabric, getMaterialReadiness } from "@/lib/cutting-utils";
 import { getStockStatus } from "@/lib/inventory-utils";
 import { getPendingReworkQuantity, isSewingOrderDelayed } from "@/lib/sewing-utils";
+import { getQcPendingReworkQuantity } from "@/lib/post-sewing-utils";
 import {
   mockAlerts,
   mockApprovals,
   mockCuttingOrders,
   mockDailyProduction,
   mockDefects,
+  mockFinishingOrders,
   mockInventoryBalances,
   mockOrders,
+  mockProcessingOrders,
   mockProductionOrders,
   mockPurchaseOrders,
   mockQcInspections,
+  mockQcOrders,
+  mockQcReworks,
   mockSewingOrders,
   mockSewingReworks,
 } from "@/mock-data";
@@ -51,6 +56,20 @@ export const navBadgeCounts = {
     if (order.status === "on_hold") return true;
     if (isSewingOrderDelayed(order, todayDate)) return true;
     return getPendingReworkQuantity(order.id, mockSewingReworks) > 0;
+  }).length,
+  processingAlerts: mockProcessingOrders.filter((order) => {
+    if (order.status === "on_hold") return true;
+    if (order.plannedEnd && order.plannedEnd < todayDate && !["completed", "cancelled"].includes(order.status)) return true;
+    return false;
+  }).length,
+  finishingAlerts: mockFinishingOrders.filter((order) => {
+    if (order.status === "on_hold") return true;
+    if (order.plannedEnd && order.plannedEnd < todayDate && !["completed", "cancelled"].includes(order.status)) return true;
+    return false;
+  }).length,
+  qcAlerts: mockQcOrders.filter((order) => {
+    if (order.status === "on_hold" || order.status === "pending_approval") return true;
+    return getQcPendingReworkQuantity(order.id, mockQcReworks) > 0;
   }).length,
 };
 

@@ -7,16 +7,20 @@ import type {
   DefectSeverity,
   DispatchStatus,
   FabricAllocationStatus,
+  FinishingOrderStatus,
   MachineStatus,
   MasterStatus,
   OrderPriority,
   OrderStatus,
+  ProcessingOrderStatus,
   ProductionOrderStatus,
   ProductionPlanStatus,
   ProductionStageStatus,
   PurchaseOrderStatus,
   PurchaseRequestPriority,
   PurchaseRequestStatus,
+  QcOrderStatus,
+  QcReworkStatus,
   ReceivingItemStatus,
   SewingOrderStatus,
   SewingReworkStatus,
@@ -212,6 +216,41 @@ export const sewingOrderStatusMeta: Record<SewingOrderStatus, StatusMeta> = {
 };
 
 export const sewingReworkStatusMeta: Record<SewingReworkStatus, StatusMeta> = {
+  pending: { label: "Pending", level: "warning" },
+  in_progress: { label: "In Progress", level: "info" },
+  completed: { label: "Completed", level: "success" },
+  rejected: { label: "Rejected", level: "critical" },
+};
+
+export const processingOrderStatusMeta: Record<ProcessingOrderStatus, StatusMeta> = {
+  planned: { label: "Planned", level: "neutral" },
+  in_progress: { label: "In Progress", level: "info" },
+  partially_received: { label: "Partially Received", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  on_hold: { label: "On Hold", level: "warning" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const finishingOrderStatusMeta: Record<FinishingOrderStatus, StatusMeta> = {
+  planned: { label: "Planned", level: "neutral" },
+  in_progress: { label: "In Progress", level: "info" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
+  completed: { label: "Completed", level: "success" },
+  on_hold: { label: "On Hold", level: "warning" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const qcOrderStatusMeta: Record<QcOrderStatus, StatusMeta> = {
+  planned: { label: "Planned", level: "neutral" },
+  in_progress: { label: "In Progress", level: "info" },
+  on_hold: { label: "On Hold", level: "warning" },
+  partially_completed: { label: "Partially Completed", level: "warning" },
+  pending_approval: { label: "Pending Approval", level: "warning" },
+  approved: { label: "Approved", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const qcReworkStatusMeta: Record<QcReworkStatus, StatusMeta> = {
   pending: { label: "Pending", level: "warning" },
   in_progress: { label: "In Progress", level: "info" },
   completed: { label: "Completed", level: "success" },

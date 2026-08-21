@@ -1117,3 +1117,230 @@ export interface Process {
   departmentId?: string;
   status: MasterStatus;
 }
+
+// ---------------------------------------------------------------------------
+// Washing / Processing (Phase 9)
+// ---------------------------------------------------------------------------
+
+/** Configurable processing step master — e.g. Stone Wash, Enzyme Wash, Bleach. */
+export interface ProcessingType {
+  id: string;
+  code: string;
+  name: string;
+  sequence: number;
+  status: MasterStatus;
+}
+
+export type ProcessingMode = "internal" | "outsourced";
+
+export type ProcessingOrderStatus =
+  | "planned"
+  | "in_progress"
+  | "partially_received"
+  | "completed"
+  | "on_hold"
+  | "cancelled";
+
+/**
+ * "What needs to go through Washing/Processing" for a batch of good sewn output. Always traces
+ * back to exactly one Sewing Order; a Sewing Order's good output can be split across several
+ * Processing Orders (different processing types, partial batches) — same multiplicity as Sewing
+ * Orders off Bundles.
+ */
+export interface ProcessingOrder {
+  id: string;
+  processingOrderNumber: string;
+  sewingOrderId: string;
+  sewingOrderNumber: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  processingTypeId: string;
+  processingTypeName: string;
+  quantity: number;
+  unit: string;
+  mode: ProcessingMode;
+  /** Set only when mode is "outsourced" — a Supplier whose type is washing_vendor/processing_vendor. */
+  vendorId?: string;
+  vendorName?: string;
+  status: ProcessingOrderStatus;
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  holdReason?: string;
+  notes?: string;
+  createdDate: string;
+}
+
+export type ProcessingTransactionType = "sent" | "received";
+
+/**
+ * One "sent to vendor/floor" or "received back" event against a Processing Order. Sent/Received/
+ * Pending are always the sum of these — never edited directly on the order.
+ */
+export interface ProcessingTransaction {
+  id: string;
+  processingOrderId: string;
+  type: ProcessingTransactionType;
+  quantity: number;
+  date: string;
+  /** Delay/issue notes — e.g. "vendor machine breakdown, 2 day delay". */
+  issueNotes?: string;
+  recordedBy: string;
+  recordedDate: string;
+}
+
+// ---------------------------------------------------------------------------
+// Finishing (Phase 9)
+// ---------------------------------------------------------------------------
+
+export type FinishingOrderStatus =
+  | "planned"
+  | "in_progress"
+  | "partially_completed"
+  | "completed"
+  | "on_hold"
+  | "cancelled";
+
+/** "What needs to be finished" — always traces back to exactly one Processing Order. */
+export interface FinishingOrder {
+  id: string;
+  finishingOrderNumber: string;
+  processingOrderId: string;
+  processingOrderNumber: string;
+  sewingOrderId: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  quantity: number;
+  unit: string;
+  /** User/team responsible for this finishing run — free text, mirrors Sewing's `supervisor`. */
+  responsible?: string;
+  status: FinishingOrderStatus;
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  holdReason?: string;
+  notes?: string;
+  createdDate: string;
+}
+
+/**
+ * One "record output" event against a Finishing Order. Output/Issue totals are always the sum of
+ * these — never edited directly. Processed = Output + Issue, always (mirrors Sewing's Input rule).
+ */
+export interface FinishingEntry {
+  id: string;
+  finishingOrderId: string;
+  date: string;
+  processedQuantity: number;
+  outputQuantity: number;
+  issueQuantity: number;
+  issueReasonId?: string;
+  notes?: string;
+  recordedBy: string;
+  recordedDate: string;
+}
+
+// ---------------------------------------------------------------------------
+// QC + Rework (Phase 9)
+// ---------------------------------------------------------------------------
+
+export type QcOrderStatus =
+  | "planned"
+  | "in_progress"
+  | "on_hold"
+  | "partially_completed"
+  /** Inspection fully done, but rework is still outstanding — not yet approvable. */
+  | "pending_approval"
+  /** Terminal — every piece is passed or rejected and no rework is pending. Ready for Packing. */
+  | "approved"
+  | "cancelled";
+
+/** "What needs to be inspected" — always traces back to exactly one Finishing Order. */
+export interface QcOrder {
+  id: string;
+  qcOrderNumber: string;
+  finishingOrderId: string;
+  finishingOrderNumber: string;
+  processingOrderId: string;
+  sewingOrderId: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  quantity: number;
+  unit: string;
+  inspector?: string;
+  status: QcOrderStatus;
+  plannedStart?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  holdReason?: string;
+  notes?: string;
+  createdDate: string;
+}
+
+/**
+ * One inspection event. Inspected = Passed + Rework + Rejected, always — enforced everywhere
+ * it's entered, the QC analogue of Sewing's "Input = Good + Rejected + Rework" rule.
+ */
+export interface QcInspectionEntry {
+  id: string;
+  qcOrderId: string;
+  date: string;
+  inspectedQuantity: number;
+  passedQuantity: number;
+  reworkQuantity: number;
+  rejectedQuantity: number;
+  defectReasonId?: string;
+  notes?: string;
+  inspector: string;
+  recordedDate: string;
+}
+
+export type QcReworkStatus = "pending" | "in_progress" | "completed" | "rejected";
+
+/**
+ * Tracks one batch of QC rework pieces through to a final passed/rejected split — mirrors
+ * SewingRework. Recovered pieces are added to Passed once, on resolution — never double-counted.
+ */
+export interface QcRework {
+  id: string;
+  reworkNumber: string;
+  qcOrderId: string;
+  inspectionEntryId: string;
+  quantity: number;
+  reasonId: string;
+  status: QcReworkStatus;
+  completedQuantity?: number;
+  rejectedQuantity?: number;
+  createdDate: string;
+  completedDate?: string;
+  recordedBy: string;
+}
