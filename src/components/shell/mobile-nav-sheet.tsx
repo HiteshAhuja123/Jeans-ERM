@@ -15,6 +15,7 @@ import { navGroups } from "@/lib/navigation";
 import { NavLink } from "@/components/shell/nav-link";
 import { UserMenu } from "@/components/shell/user-menu";
 import { RoleSwitcher } from "@/components/shell/role-switcher";
+import { getVisibleNavGroups, usePermissions } from "@/lib/permissions";
 
 interface MobileNavSheetProps {
   trigger: React.ReactNode;
@@ -22,6 +23,8 @@ interface MobileNavSheetProps {
 
 export function MobileNavSheet({ trigger }: MobileNavSheetProps) {
   const [open, setOpen] = useState(false);
+  const { role } = usePermissions();
+  const visibleGroups = getVisibleNavGroups(role, navGroups);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -42,7 +45,7 @@ export function MobileNavSheet({ trigger }: MobileNavSheetProps) {
         </SheetHeader>
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
           <div className="flex flex-col gap-5">
-            {navGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <div key={group.label} className="flex flex-col gap-1">
                 <span className="px-3 text-[11px] font-semibold tracking-wide text-sidebar-foreground/45 uppercase">
                   {group.label}

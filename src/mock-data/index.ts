@@ -8,7 +8,6 @@ export * from "./purchasing";
 export * from "./goods-receipts";
 export * from "./quality";
 export * from "./dispatch";
-export * from "./alerts";
 export * from "./sizes";
 export * from "./colors";
 export * from "./uom";

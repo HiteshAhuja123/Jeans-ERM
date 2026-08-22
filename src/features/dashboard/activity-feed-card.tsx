@@ -28,11 +28,10 @@ export function ActivityFeedCard({ activity }: { activity: ActivityItem[] }) {
                 <span className="relative mt-1.5 size-[11px] shrink-0 rounded-full border-2 border-primary bg-card" />
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-sm text-foreground">
-                    <span className="font-medium">{item.actor}</span> {item.action}{" "}
-                    <span className="font-medium">{item.target}</span>
+                    <span className="font-medium">{item.actor}</span> — {item.action}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {formatRelativeTime(item.timestamp)}
+                    {item.target} · {formatRelativeTime(item.timestamp)}
                   </span>
                 </span>
               </li>

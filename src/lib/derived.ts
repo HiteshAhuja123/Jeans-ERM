@@ -3,8 +3,6 @@ import { getStockStatus } from "@/lib/inventory-utils";
 import { getPendingReworkQuantity, isSewingOrderDelayed } from "@/lib/sewing-utils";
 import { getQcPendingReworkQuantity } from "@/lib/post-sewing-utils";
 import {
-  mockAlerts,
-  mockApprovals,
   mockCuttingOrders,
   mockDailyProduction,
   mockDefects,
@@ -15,6 +13,7 @@ import {
   mockProcessingOrders,
   mockProductionOrders,
   mockPurchaseOrders,
+  mockPurchaseRequests,
   mockQcInspections,
   mockQcOrders,
   mockQcReworks,
@@ -37,7 +36,9 @@ export const navBadgeCounts = {
     return level === "low" || level === "critical" || level === "out_of_stock";
   }).length,
   openDefects: mockDefects.filter((defect) => defect.status === "open").length,
-  pendingApprovals: mockApprovals.length,
+  pendingApprovals:
+    mockPurchaseRequests.filter((pr) => pr.status === "pending_approval").length +
+    mockPurchaseOrders.filter((po) => po.status === "pending_approval").length,
   openPurchaseOrders: mockPurchaseOrders.filter((po) =>
     ["pending_approval", "approved", "sent", "partially_received"].includes(po.status),
   ).length,
@@ -78,8 +79,6 @@ export const navBadgeCounts = {
     return false;
   }).length,
 };
-
-export const notificationCount = mockAlerts.length;
 
 const today = mockDailyProduction[mockDailyProduction.length - 1];
 const totalInspected = mockQcInspections.reduce((sum, i) => sum + i.inspectedQty, 0);

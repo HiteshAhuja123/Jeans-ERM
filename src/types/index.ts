@@ -1103,6 +1103,9 @@ export interface ActivityItem {
   timestamp: string;
 }
 
+/** What kind of record this approval action targets — drives which mutation Approve/Reject calls (Phase 11). */
+export type ApprovalRecordType = "purchase_request" | "purchase_order";
+
 export interface ApprovalItem {
   id: string;
   type: string;
@@ -1110,6 +1113,10 @@ export interface ApprovalItem {
   requestedBy: string;
   amount?: number;
   timestamp: string;
+  /** Set when this approval is backed by a real record — lets Approve/Reject call the record's own status transition instead of being purely decorative. */
+  recordType?: ApprovalRecordType;
+  recordId?: string;
+  href?: string;
 }
 
 // ---------------------------------------------------------------------------

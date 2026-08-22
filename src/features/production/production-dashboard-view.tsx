@@ -13,14 +13,12 @@ import { ProductionLineCard } from "@/features/production/production-line-card";
 import { formatPercent } from "@/lib/format";
 import { dashboardMetrics } from "@/lib/derived";
 import { computeMaterialRequirements, getMaterialAvailability } from "@/lib/production-utils";
+import { getProductionInsights } from "@/lib/insights-utils";
 import { bomHooks, productionOrderHooks } from "@/features/production/service";
 import { inventoryHooks } from "@/features/inventory/service";
 import { purchaseOrderHooks } from "@/features/purchasing/service";
 import { mockDailyProduction, mockProductionLines } from "@/mock-data";
-import type { ProductionOrderStatus, StatusLevel } from "@/types";
-
-const activeStatuses: ProductionOrderStatus[] = ["planned", "released", "in_progress", "on_hold", "partially_completed"];
-const pendingStatuses: ProductionOrderStatus[] = ["draft", "planned"];
+import type { StatusLevel } from "@/types";
 
 export function ProductionDashboardView() {
   const { data: productionOrders = [] } = productionOrderHooks.useList();
@@ -33,17 +31,7 @@ export function ProductionDashboardView() {
   weekOutDate.setDate(weekOutDate.getDate() + 7);
   const weekOut = weekOutDate.toISOString().slice(0, 10);
 
-  const metrics = useMemo(() => {
-    const active = productionOrders.filter((po) => activeStatuses.includes(po.status));
-    const pending = productionOrders.filter((po) => pendingStatuses.includes(po.status));
-    const dueToday = active.filter((po) => po.plannedEnd === today);
-    const dueThisWeek = active.filter((po) => po.plannedEnd >= today && po.plannedEnd <= weekOut);
-    const delayed = active.filter((po) => po.plannedEnd < today);
-    const completed = productionOrders.filter((po) => po.status === "completed");
-    const plannedQty = productionOrders.filter((po) => po.status !== "cancelled").reduce((sum, po) => sum + po.quantity, 0);
-    const completedQty = productionOrders.reduce((sum, po) => sum + po.quantityProduced, 0);
-    return { active, pending, dueToday, dueThisWeek, delayed, completed, plannedQty, completedQty };
-  }, [productionOrders, today, weekOut]);
+  const metrics = useMemo(() => getProductionInsights(productionOrders, today, weekOut), [productionOrders, today, weekOut]);
 
   const progressPercent = metrics.plannedQty > 0 ? Math.round((metrics.completedQty / metrics.plannedQty) * 100) : 0;
 

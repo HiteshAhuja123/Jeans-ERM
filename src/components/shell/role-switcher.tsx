@@ -15,11 +15,18 @@ import type { Role } from "@/types";
 
 const previewableRoles: Role[] = [
   "owner",
+  "management",
+  "admin_staff",
   "production_manager",
   "production_supervisor",
   "store_manager",
   "purchase_manager",
   "qc_manager",
+  "qc_staff",
+  "cutting_staff",
+  "sewing_staff",
+  "packing_staff",
+  "dispatch_staff",
 ];
 
 export function RoleSwitcher() {

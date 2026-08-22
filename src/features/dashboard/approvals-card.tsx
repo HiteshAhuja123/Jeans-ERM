@@ -1,12 +1,35 @@
+"use client";
+
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { purchaseOrderHooks, purchaseRequestHooks } from "@/features/purchasing/service";
 import type { ApprovalItem } from "@/types";
 
-export function ApprovalsCard({ approvals }: { approvals: ApprovalItem[] }) {
+export function ApprovalsCard({ approvals, canApprove }: { approvals: ApprovalItem[]; canApprove: boolean }) {
+  const prSetStatus = purchaseRequestHooks.useSetStatus();
+  const poSetStatus = purchaseOrderHooks.useSetStatus();
+  const isPending = prSetStatus.isPending || poSetStatus.isPending;
+
+  async function handleDecision(approval: ApprovalItem, approve: boolean) {
+    try {
+      if (approval.recordType === "purchase_request" && approval.recordId) {
+        await prSetStatus.mutateAsync({ id: approval.recordId, status: approve ? "approved" : "rejected" });
+      } else if (approval.recordType === "purchase_order" && approval.recordId) {
+        await poSetStatus.mutateAsync({ id: approval.recordId, status: approve ? "approved" : "cancelled" });
+      } else {
+        return;
+      }
+      toast.success(`${approval.title} ${approve ? "approved" : "rejected"}`);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -18,7 +41,7 @@ export function ApprovalsCard({ approvals }: { approvals: ApprovalItem[] }) {
           <EmptyState
             icon={CheckCircle2}
             title="Nothing to approve"
-            description="New purchase requests and rework plans will show up here."
+            description="New purchase requests and purchase orders awaiting sign-off will show up here."
           />
         ) : (
           approvals.map((approval) => (
@@ -34,12 +57,22 @@ export function ApprovalsCard({ approvals }: { approvals: ApprovalItem[] }) {
                   {approval.amount ? ` · ${formatCurrency(approval.amount)}` : ""}
                 </span>
               </div>
-              <div className="flex shrink-0 gap-2">
-                <Button size="sm" variant="outline">
-                  Reject
-                </Button>
-                <Button size="sm">Approve</Button>
-              </div>
+              {canApprove ? (
+                <div className="flex shrink-0 gap-2">
+                  <Button size="sm" variant="outline" disabled={isPending} onClick={() => handleDecision(approval, false)}>
+                    Reject
+                  </Button>
+                  <Button size="sm" disabled={isPending} onClick={() => handleDecision(approval, true)}>
+                    Approve
+                  </Button>
+                </div>
+              ) : (
+                approval.href && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={approval.href}>View</a>
+                  </Button>
+                )
+              )}
             </div>
           ))
         )}

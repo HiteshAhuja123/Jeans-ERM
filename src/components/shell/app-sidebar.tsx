@@ -7,8 +7,12 @@ import { navGroups } from "@/lib/navigation";
 import { NavLink } from "@/components/shell/nav-link";
 import { UserMenu } from "@/components/shell/user-menu";
 import { RoleSwitcher } from "@/components/shell/role-switcher";
+import { getVisibleNavGroups, usePermissions } from "@/lib/permissions";
 
 export function AppSidebar() {
+  const { role } = usePermissions();
+  const visibleGroups = getVisibleNavGroups(role, navGroups);
+
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       <div className="flex h-16 items-center gap-2.5 border-b border-sidebar-border px-5">
@@ -23,7 +27,7 @@ export function AppSidebar() {
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <div className="flex flex-col gap-5">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label} className="flex flex-col gap-1">
               <span className="px-3 text-[11px] font-semibold tracking-wide text-sidebar-foreground/45 uppercase">
                 {group.label}
