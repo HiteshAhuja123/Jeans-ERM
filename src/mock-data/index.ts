@@ -44,3 +44,7 @@ export * from "./finishing";
 export * from "./finishing-activity";
 export * from "./qc";
 export * from "./qc-activity";
+export * from "./packing";
+export * from "./packing-activity";
+export * from "./finished-goods";
+export * from "./dispatch-activity";

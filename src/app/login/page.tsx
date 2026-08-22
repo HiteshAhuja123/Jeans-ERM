@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CheckCircle2, Shirt } from "lucide-react";
 
 import { LoginForm } from "@/features/auth/login-form";
+import { CreatorCredit } from "@/components/shared/creator-credit";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -47,21 +48,27 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
-        <div className="flex w-full max-w-sm flex-col gap-8">
-          <div className="flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden">
-              <Shirt className="size-5" aria-hidden="true" />
-            </span>
-            <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">Welcome back</h2>
-              <p className="text-sm text-muted-foreground">
-                Sign in to your factory workspace to continue.
-              </p>
+      <div className="flex flex-1 flex-col px-4 py-12 sm:px-6">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="flex w-full max-w-sm flex-col gap-8">
+            <div className="flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden">
+                <Shirt className="size-5" aria-hidden="true" />
+              </span>
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">Welcome back</h2>
+                <p className="text-sm text-muted-foreground">
+                  Sign in to your factory workspace to continue.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <LoginForm />
+            <LoginForm />
+          </div>
+        </div>
+
+        <div className="flex justify-center pt-8">
+          <CreatorCredit />
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   mockFinishingOrders,
   mockInventoryBalances,
   mockOrders,
+  mockPackingOrders,
   mockProcessingOrders,
   mockProductionOrders,
   mockPurchaseOrders,
@@ -70,6 +71,11 @@ export const navBadgeCounts = {
   qcAlerts: mockQcOrders.filter((order) => {
     if (order.status === "on_hold" || order.status === "pending_approval") return true;
     return getQcPendingReworkQuantity(order.id, mockQcReworks) > 0;
+  }).length,
+  packingAlerts: mockPackingOrders.filter((order) => {
+    if (order.status === "on_hold") return true;
+    if (order.plannedEnd && order.plannedEnd < todayDate && !["packed", "cancelled"].includes(order.status)) return true;
+    return false;
   }).length,
 };
 

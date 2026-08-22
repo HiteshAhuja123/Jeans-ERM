@@ -35,7 +35,8 @@ export interface NavItem {
     | "sewingAlerts"
     | "processingAlerts"
     | "finishingAlerts"
-    | "qcAlerts";
+    | "qcAlerts"
+    | "packingAlerts";
 }
 
 export interface NavGroup {
@@ -165,8 +166,14 @@ export const navGroups: NavGroup[] = [
         label: "Inventory",
         href: "/inventory",
         icon: PackageSearch,
-        description: "Fabric, accessories & finished goods",
+        description: "Fabric & accessories",
         badgeKey: "lowStock",
+      },
+      {
+        label: "Finished Goods",
+        href: "/inventory/finished-goods",
+        icon: Package,
+        description: "Packed, dispatch-ready stock by production order",
       },
     ],
   },
@@ -198,10 +205,17 @@ export const navGroups: NavGroup[] = [
     label: "Packing & Dispatch",
     items: [
       {
+        label: "Packing",
+        href: "/packing",
+        icon: Package,
+        description: "Cartonize QC-approved garments",
+        badgeKey: "packingAlerts",
+      },
+      {
         label: "Dispatch",
         href: "/dispatch",
         icon: Ship,
-        description: "Packing, finished goods & shipping",
+        description: "Fulfillment dashboard & shipments",
       },
     ],
   },

@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   },
   description:
     "ERM Jeans is a factory management system for denim manufacturing — orders, production, inventory, quality and dispatch in one place.",
+  authors: [{ name: "Hitesh Ahuja", url: "https://hitesh-portfolio-website.vercel.app/" }],
+  creator: "Hitesh Ahuja",
 };
 
 export const viewport: Viewport = {

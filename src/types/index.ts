@@ -906,21 +906,177 @@ export interface DefectRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Packing & Dispatch
+// Packing (Phase 10)
 // ---------------------------------------------------------------------------
 
-export type DispatchStatus = "pending" | "packed" | "in_transit" | "delivered";
+export type PackingOrderStatus =
+  | "planned"
+  | "in_progress"
+  | "partially_packed"
+  | "packed"
+  | "on_hold"
+  | "cancelled";
 
-export interface DispatchRecord {
+/**
+ * "What needs to be packed" — always traces back to exactly one QC Order. Only QC Orders in
+ * "approved" status ever have packable quantity — see `getQcOrderAvailableForPacking`.
+ */
+export interface PackingOrder {
   id: string;
+  packingOrderNumber: string;
+  qcOrderId: string;
+  qcOrderNumber: string;
+  finishingOrderId: string;
+  processingOrderId: string;
+  sewingOrderId: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
   orderNumber: string;
+  customerId: string;
   customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  skuId?: string;
   quantity: number;
-  cartons: number;
-  status: DispatchStatus;
+  unit: string;
+  responsible?: string;
+  status: PackingOrderStatus;
+  plannedStart?: string;
+  plannedEnd?: string;
+  actualStart?: string;
+  actualEnd?: string;
+  holdReason?: string;
+  notes?: string;
+  createdDate: string;
+}
+
+/**
+ * One "record packing" event against a Packing Order. Packed totals are always the sum of these
+ * — never edited directly. Each entry is split into one or more PackingCartons at recording time.
+ */
+export interface PackingEntry {
+  id: string;
+  packingOrderId: string;
+  date: string;
+  packedQuantity: number;
+  cartonCount: number;
+  notes?: string;
+  recordedBy: string;
+  recordedDate: string;
+}
+
+/** One physical carton created from a Packing Entry — pieces split as evenly as possible across cartonCount. */
+export interface PackingCarton {
+  id: string;
+  packingOrderId: string;
+  packingEntryId: string;
+  cartonNumber: string;
+  quantity: number;
+  createdDate: string;
+}
+
+// ---------------------------------------------------------------------------
+// Finished Goods (Phase 10)
+// ---------------------------------------------------------------------------
+
+/**
+ * A production order's finished-goods stock position — one balance per Production Order, mirroring
+ * InventoryBalance's "one balance per Material" convention. `packed`/`dispatched` are running totals
+ * fed by Packing and Dispatch; `onHand` and `available` are always derived — see `finished-goods-utils`.
+ */
+export interface FinishedGoodsBalance {
+  /** Same value as `productionOrderId` — one balance per production order. */
+  id: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  skuId?: string;
+  unit: string;
+  /** Total ever received from Packing. */
+  packed: number;
+  /** Total ever issued to Dispatch. */
+  dispatched: number;
+  /** Held back for a confirmed dispatch — set by mock data in this phase, not interactively adjustable yet. */
+  reserved: number;
+  warehouseId: string;
+  locationId: string;
+  lastMovementDate: string;
+}
+
+export type FinishedGoodsMovementType = "receipt" | "issue";
+
+export interface FinishedGoodsMovement {
+  id: string;
+  productionOrderId: string;
+  styleCode: string;
+  colorName: string;
+  type: FinishedGoodsMovementType;
+  /** Signed delta — positive from Packing receipts, negative from Dispatch issues. */
+  quantity: number;
+  unit: string;
+  warehouseId: string;
+  locationId: string;
+  reference: string;
+  performedBy: string;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Dispatch (Phase 10)
+// ---------------------------------------------------------------------------
+
+export type DispatchOrderStatus = "dispatched" | "in_transit" | "delivered" | "cancelled";
+
+export interface DispatchLineItem {
+  id: string;
+  productionOrderId: string;
+  productionOrderNumber: string;
+  styleId: string;
+  styleCode: string;
+  styleName: string;
+  colorId: string;
+  colorName: string;
+  skuId?: string;
+  quantity: number;
+  unit: string;
+}
+
+/**
+ * One shipment event against a customer Order, drawn from Finished Goods. Created the moment
+ * goods physically leave the warehouse — a customer Order may have several Dispatch Orders as
+ * fulfillment happens across partial shipments over time.
+ */
+export interface DispatchOrder {
+  id: string;
+  dispatchOrderNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  lineItems: DispatchLineItem[];
+  /** Sum of `lineItems` quantities, denormalized for display. */
+  quantity: number;
+  unit: string;
+  status: DispatchOrderStatus;
+  carrier?: string;
+  trackingRef?: string;
   dispatchDate: string;
-  carrier: string;
-  trackingRef: string;
+  deliveredDate?: string;
+  notes?: string;
+  recordedBy: string;
+  createdDate: string;
 }
 
 // ---------------------------------------------------------------------------

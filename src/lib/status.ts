@@ -5,13 +5,14 @@ import type {
   CuttingOrderStatus,
   CuttingPlanStatus,
   DefectSeverity,
-  DispatchStatus,
+  DispatchOrderStatus,
   FabricAllocationStatus,
   FinishingOrderStatus,
   MachineStatus,
   MasterStatus,
   OrderPriority,
   OrderStatus,
+  PackingOrderStatus,
   ProcessingOrderStatus,
   ProductionOrderStatus,
   ProductionPlanStatus,
@@ -131,11 +132,20 @@ export const defectSeverityMeta: Record<DefectSeverity, StatusMeta> = {
   critical: { label: "Critical", level: "critical" },
 };
 
-export const dispatchStatusMeta: Record<DispatchStatus, StatusMeta> = {
-  pending: { label: "Pending", level: "neutral" },
-  packed: { label: "Packed", level: "info" },
+export const packingOrderStatusMeta: Record<PackingOrderStatus, StatusMeta> = {
+  planned: { label: "Planned", level: "neutral" },
+  in_progress: { label: "In Progress", level: "info" },
+  partially_packed: { label: "Partially Packed", level: "warning" },
+  packed: { label: "Packed", level: "success" },
+  on_hold: { label: "On Hold", level: "warning" },
+  cancelled: { label: "Cancelled", level: "neutral" },
+};
+
+export const dispatchOrderStatusMeta: Record<DispatchOrderStatus, StatusMeta> = {
+  dispatched: { label: "Dispatched", level: "info" },
   in_transit: { label: "In Transit", level: "warning" },
   delivered: { label: "Delivered", level: "success" },
+  cancelled: { label: "Cancelled", level: "neutral" },
 };
 
 export const alertLevelMeta: Record<AlertLevel, StatusMeta> = {

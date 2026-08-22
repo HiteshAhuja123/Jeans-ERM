@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { DispatchView } from "@/features/dispatch/dispatch-view";
+import { PackingView } from "@/features/packing/packing-view";
 import { ListPageSkeleton } from "@/components/shared/list-page-skeleton";
 
-export const metadata: Metadata = {
-  title: "Dispatch",
-};
+export const metadata: Metadata = { title: "Packing" };
 
-export default function DispatchPage() {
+export default function PackingPage() {
   return (
     <Suspense fallback={<ListPageSkeleton />}>
-      <DispatchView />
+      <PackingView />
     </Suspense>
   );
 }

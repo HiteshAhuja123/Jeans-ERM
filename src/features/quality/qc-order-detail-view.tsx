@@ -116,9 +116,12 @@ export function QcOrderDetailView({ id }: { id: string }) {
               </Card>
 
               {order.status === "approved" && (
-                <p className="rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success">
-                  Approved — every inspected piece has passed or been rejected, and no rework is pending. Ready for Packing.
-                </p>
+                <div className="flex flex-col gap-2 rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success sm:flex-row sm:items-center sm:justify-between">
+                  <span>Approved — every inspected piece has passed or been rejected, and no rework is pending. Ready for Packing.</span>
+                  <Button size="sm" variant="outline" className="w-fit" onClick={() => router.push(`/packing?qcOrderId=${order.id}`)}>
+                    Go to Packing
+                  </Button>
+                </div>
               )}
               {summary.pendingRework > 0 && (
                 <p className="rounded-lg border border-warning/25 bg-warning-subtle px-3 py-2 text-sm text-warning">

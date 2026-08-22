@@ -469,9 +469,20 @@ export function ProductionOrderDetailView({ id }: { id: string }) {
                 </Card>
               )}
               {po.currentStage === "packing" && poQcOrders.some((q) => q.status !== "cancelled") && poQcOrders.filter((q) => q.status !== "cancelled").every((q) => q.status === "approved") && (
-                <p className="rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success">
-                  All QC orders for this production order are approved — Ready for Packing (Phase 10).
-                </p>
+                <div className="flex flex-col gap-2 rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success sm:flex-row sm:items-center sm:justify-between">
+                  <span>All QC orders for this production order are approved — Ready for Packing.</span>
+                  <Button size="sm" variant="outline" className="w-fit" onClick={() => router.push(`/packing?q=${encodeURIComponent(po.productionOrderNumber)}`)}>
+                    Go to Packing
+                  </Button>
+                </div>
+              )}
+              {po.currentStage === "dispatch" && (
+                <div className="flex flex-col gap-2 rounded-lg border border-success/25 bg-success-subtle px-3 py-2 text-sm text-success sm:flex-row sm:items-center sm:justify-between">
+                  <span>This production order is fully packed — its Finished Goods are ready for Dispatch.</span>
+                  <Button size="sm" variant="outline" className="w-fit" onClick={() => router.push(`/inventory/finished-goods/${po.id}`)}>
+                    View Finished Goods
+                  </Button>
+                </div>
               )}
             </TabsContent>
 
